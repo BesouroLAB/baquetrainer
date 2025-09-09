@@ -5,15 +5,17 @@ interface MetronomeProps {
   bpm: number;
   timeSignature: [number, number];
   currentBeat: number;
+  playbackRate: number;
 }
 
-export const Metronome: React.FC<MetronomeProps> = ({ bpm, timeSignature, currentBeat }) => {
+export const Metronome: React.FC<MetronomeProps> = ({ bpm, timeSignature, currentBeat, playbackRate }) => {
   const beats = Array.from({ length: timeSignature[0] }, (_, i) => i + 1);
+  const effectiveBpm = Math.round(bpm * playbackRate);
 
   return (
     <div className="flex items-center space-x-4">
       <div>
-        <div className="text-2xl font-bold">{bpm}<span className="text-sm font-normal text-slate-400"> BPM</span></div>
+        <div className="text-2xl font-bold">{effectiveBpm}<span className="text-sm font-normal text-slate-400"> BPM</span></div>
         <div className="text-sm text-slate-400">{timeSignature.join(' / ')}</div>
       </div>
       <div className="flex space-x-2 items-center">

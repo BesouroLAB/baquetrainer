@@ -9,6 +9,7 @@ import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { SONGS } from './constants';
 import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
+import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SONGS[0]);
@@ -33,6 +34,8 @@ const App: React.FC = () => {
     currentTime,
     songDuration,
     seek,
+    playbackRate,
+    setPlaybackRate,
   } = useAudioPlayer(selectedSong);
 
   const handleSelectSong = useCallback((song: Song) => {
@@ -45,11 +48,13 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans flex flex-col">
       <Header />
-      <main className="flex-grow flex flex-col md:flex-row p-4 gap-4 min-h-0">
-        <aside className="md:w-1/4 lg:w-1/5">
-          <SongSelector songs={SONGS} selectedSong={selectedSong} onSelectSong={handleSelectSong} />
-        </aside>
-        <section className="flex-grow md:w-3/4 lg:w-4/5 bg-slate-800/50 rounded-lg p-4 flex flex-col">
+      
+      <div className="py-4 px-4 border-b border-slate-800 shadow-md">
+        <SongSelector songs={SONGS} selectedSong={selectedSong} onSelectSong={handleSelectSong} />
+      </div>
+
+      <main className="flex-grow flex flex-col p-4 gap-4 min-h-0">
+        <section className="flex-grow bg-slate-800/50 rounded-lg p-4 flex flex-col h-full">
           <h2 className="text-xl font-bold mb-4 text-amber-400 border-b-2 border-slate-700 pb-2">{selectedSong.name}</h2>
           
           {hasErrors && (
@@ -88,7 +93,7 @@ const App: React.FC = () => {
       <footer className="bg-slate-950/80 p-4 sticky bottom-0 border-t border-slate-700 backdrop-blur-sm shadow-t-lg">
           <div className="max-w-7xl mx-auto grid grid-cols-3 items-center justify-between gap-4">
             <div className="flex items-center justify-start gap-4">
-              <Metronome bpm={selectedSong.bpm} timeSignature={selectedSong.timeSignature} currentBeat={currentBeat} />
+              <Metronome bpm={selectedSong.bpm} timeSignature={selectedSong.timeSignature} currentBeat={currentBeat} playbackRate={playbackRate} />
               <div className="flex items-center space-x-2">
                   <span className="text-sm">Metronome</span>
                   <button
@@ -101,7 +106,8 @@ const App: React.FC = () => {
             <div className="flex justify-center">
               <TransportControls isPlaying={isPlaying} onPlay={play} onPause={pause} onStop={stop} onReturnToZero={returnToZero} hasErrors={hasErrors} currentTime={currentTime} songDuration={songDuration} onSeek={seek} />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-6">
+                <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
                 <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
             </div>
           </div>
