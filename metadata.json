@@ -1,7 +1,5 @@
 {
   "name": "BaqueTrainer",
   "description": "An interactive music trainer for Maracatu rhythms. Load songs as separate instrumental tracks, control the mix with a virtual console, and practice playing the alfaia along with a virtual band. Features individual volume, mute, and solo controls for each instrument.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }

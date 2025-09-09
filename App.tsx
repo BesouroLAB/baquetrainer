@@ -12,6 +12,7 @@ import { MasterControl } from './components/MasterControl';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SONGS[0]);
+
   const {
     isLoading,
     isPlaying,
@@ -44,7 +45,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans flex flex-col">
       <Header />
-      <main className="flex-grow flex flex-col md:flex-row p-4 gap-4">
+      <main className="flex-grow flex flex-col md:flex-row p-4 gap-4 min-h-0">
         <aside className="md:w-1/4 lg:w-1/5">
           <SongSelector songs={SONGS} selectedSong={selectedSong} onSelectSong={handleSelectSong} />
         </aside>
@@ -69,7 +70,18 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (
-            <Mixer trackStates={trackStates} setVolume={setVolume} toggleMute={toggleMute} toggleSolo={toggleSolo} trackLoadErrors={trackLoadErrors} />
+            <div className="flex flex-col flex-grow min-h-0">
+                <h3 className="text-lg font-semibold mb-3 text-amber-400/90 border-b border-slate-700 pb-2">Mixer Console</h3>
+                <div className="flex-grow">
+                    <Mixer 
+                      trackStates={trackStates} 
+                      setVolume={setVolume} 
+                      toggleMute={toggleMute} 
+                      toggleSolo={toggleSolo} 
+                      trackLoadErrors={trackLoadErrors} 
+                    />
+                </div>
+            </div>
           )}
         </section>
       </main>
