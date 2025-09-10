@@ -37,7 +37,19 @@ export const TrackControl: React.FC<TrackControlProps> = ({ trackState, setVolum
     setVolume(id, parseFloat(e.target.value));
   };
 
-  const volumePercentage = Math.round(volume * 100);
+  const MAX_VOLUME = 1.5;
+
+  // Convert linear volume to dB for display
+  const volumeDb = volume === 0 ? -Infinity : 20 * Math.log10(volume);
+  const displayDb = isFinite(volumeDb) ? volumeDb.toFixed(1) : '-INF';
+
+  // Calculate fader fill percentage based on the new max volume
+  const faderFillPercentage = (volume / MAX_VOLUME) * 100;
+
+  // Determine colors based on volume level for better feedback
+  const faderFillColor = volume > 1.0 ? 'bg-red-500/90' : 'bg-amber-500/80';
+  const readoutColor = hasError ? 'text-red-400' : (volume > 1.0 ? 'text-red-400' : 'text-slate-300');
+
 
   return (
     <div className={`flex flex-col items-center p-3 bg-slate-900/70 rounded-lg w-32 h-full border-2 ${
@@ -82,20 +94,26 @@ export const TrackControl: React.FC<TrackControlProps> = ({ trackState, setVolum
       
       {/* Fader */}
       <div className="flex-grow flex flex-col items-center justify-center my-2 relative w-full">
-        <div className="relative h-32 w-8 bg-slate-700 rounded-lg overflow-hidden">
+        <div className="relative h-48 w-8 bg-slate-700 rounded-lg overflow-hidden border-b border-t border-slate-600/50">
+           {/* 0 dB line marker */}
+          <div 
+            className="absolute left-1 right-1 h-px bg-slate-400/70 z-10"
+            style={{ bottom: `${(1.0 / MAX_VOLUME) * 100}%` }}
+            title="0 dB"
+          ></div>
           {/* Fill level */}
           <div
-            className="absolute bottom-0 left-0 right-0 bg-amber-500/80 transition-all duration-75"
-            style={{ height: `${volumePercentage}%` }}
+            className={`absolute bottom-0 left-0 right-0 ${faderFillColor} transition-colors duration-100`}
+            style={{ height: `${faderFillPercentage}%` }}
           />
           <input
             type="range"
             min="0"
-            max="1"
+            max={MAX_VOLUME}
             step="0.01"
             value={volume}
             onChange={handleVolumeChange}
-            className="appearance-none [writing-mode:vertical-lr] bg-transparent w-8 h-32 cursor-pointer accent-amber-400 disabled:opacity-50 transform rotate-180 absolute inset-0"
+            className="appearance-none [writing-mode:vertical-lr] bg-transparent w-8 h-48 cursor-pointer accent-amber-400 disabled:opacity-50 transform rotate-180 absolute inset-0 z-20"
             disabled={hasError}
             aria-label={`${instrument} volume`}
           />
@@ -103,9 +121,9 @@ export const TrackControl: React.FC<TrackControlProps> = ({ trackState, setVolum
       </div>
       
       {/* Volume Readout */}
-      <div className={`text-center mt-2 w-full p-1 rounded-b-md ${hasError ? 'text-red-400' : 'text-slate-400'}`}>
-        <p className="text-xs font-mono">
-            {hasError ? errorText : `${volumePercentage}%`}
+      <div className={`text-center mt-2 w-full p-1 rounded-b-md`}>
+        <p className={`text-lg font-mono font-bold transition-colors duration-150 ${readoutColor}`}>
+            {hasError ? errorText : `${displayDb} dB`}
         </p>
       </div>
     </div>

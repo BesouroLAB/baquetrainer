@@ -12,8 +12,8 @@ interface MixerProps {
 
 export const Mixer: React.FC<MixerProps> = ({ trackStates, setVolume, toggleMute, toggleSolo, trackLoadErrors }) => {
   return (
-    <div className="overflow-x-auto pb-4 bg-slate-800/70 shadow-inner rounded-lg p-4 h-full">
-      <div className="inline-flex space-x-6 h-full">
+    <div className="overflow-x-auto pb-4 h-full">
+      <div className="inline-flex space-x-4 h-full">
         {trackStates.map((track) => (
           <TrackControl
             key={track.id}

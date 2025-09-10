@@ -48,7 +48,7 @@ const formatTime = (timeInSeconds: number): string => {
 export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying, onPlay, onPause, onStop, onReturnToZero, hasErrors, currentTime, songDuration, onSeek }) => {
   const playButtonTooltip = hasErrors 
     ? "Cannot play: One or more audio tracks failed to load." 
-    : (isPlaying ? "Pause" : "Play");
+    : "Play";
 
   return (
     <div className="flex flex-col items-center space-y-2 w-full max-w-md">
@@ -59,16 +59,29 @@ export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying,
         <button onClick={onStop} className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors" title="Stop">
           <StopIcon className="w-6 h-6" />
         </button>
-        <div title={playButtonTooltip}>
-          <button 
-            onClick={isPlaying ? onPause : onPlay}
-            className="p-4 rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={hasErrors}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
-          </button>
-        </div>
+        
+        {isPlaying ? (
+            <button 
+                onClick={onPause}
+                className="p-4 rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors"
+                aria-label="Pause"
+                title="Pause"
+            >
+                <PauseIcon className="w-8 h-8" />
+            </button>
+        ) : (
+            <div title={playButtonTooltip}>
+                <button 
+                    onClick={onPlay}
+                    className="p-4 rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={hasErrors}
+                    aria-label="Play"
+                >
+                    <PlayIcon className="w-8 h-8" />
+                </button>
+            </div>
+        )}
+
       </div>
        <div className="w-full flex items-center gap-2 text-slate-400">
         <span className="font-mono text-xs">{formatTime(currentTime)}</span>
