@@ -282,6 +282,17 @@ export const useAudioPlayer = (song: Song) => {
     setTrackStates(prev => prev.map(t => t.id === trackId ? { ...t, isSoloed: !t.isSoloed } : t));
   };
 
+  const resetMixer = useCallback(() => {
+    setTrackStates(prev => 
+      prev.map(track => ({
+        ...track,
+        volume: 1.0,
+        isMuted: false,
+        isSoloed: false,
+      }))
+    );
+  }, []);
+
   useEffect(() => {
     const resumeAudio = async () => {
         if (audioContext && audioContext.state === 'suspended') {
@@ -314,6 +325,7 @@ export const useAudioPlayer = (song: Song) => {
     setVolume,
     toggleMute,
     toggleSolo,
+    resetMixer,
     trackLoadErrors,
     masterVolume,
     setMasterVolume,

@@ -23,6 +23,7 @@ const App: React.FC = () => {
     setVolume,
     toggleMute,
     toggleSolo,
+    resetMixer,
     trackLoadErrors,
     masterVolume,
     setMasterVolume,
@@ -88,7 +89,19 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col flex-grow min-h-0">
-                    <h3 className="text-lg font-semibold mb-3 text-amber-400/90 flex-shrink-0">Mixer Console</h3>
+                    <div className="flex justify-between items-center mb-3 flex-shrink-0">
+                        <h3 className="text-lg font-semibold text-amber-400/90">Mixer Console</h3>
+                        <button
+                            onClick={resetMixer}
+                            className="flex items-center space-x-2 px-3 py-1 text-sm bg-slate-700/80 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
+                            title="Reset all track volumes, mutes, and solos"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.885-.666A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566z" clipRule="evenodd" />
+                            </svg>
+                            <span>Reset</span>
+                        </button>
+                    </div>
                     <div className="flex-grow overflow-hidden">
                         <Mixer 
                           trackStates={trackStates} 
