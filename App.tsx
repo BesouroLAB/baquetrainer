@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SongSelector } from './components/SongSelector';
 import { Mixer } from './components/Mixer';
@@ -10,9 +10,13 @@ import { SONGS } from './constants';
 import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
+import { BpmControl } from './components/BpmControl';
+import { getBpmFromGemini } from './utils/gemini';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SONGS[0]);
+  const [currentBpm, setCurrentBpm] = useState<number>(selectedSong.bpm);
+  const [isAnalyzingBpm, setIsAnalyzingBpm] = useState(true);
 
   const {
     isLoading,
@@ -36,12 +40,35 @@ const App: React.FC = () => {
     seek,
     playbackRate,
     setPlaybackRate,
-  } = useAudioPlayer(selectedSong);
+  } = useAudioPlayer(selectedSong, currentBpm);
+
+  useEffect(() => {
+    const analyzeBpm = async () => {
+      // Immediately stop any playback from the previous song.
+      stop();
+      // Set a sensible default BPM from the song file to prevent UI flicker
+      // while we wait for the AI to respond.
+      setCurrentBpm(selectedSong.bpm);
+      setIsAnalyzingBpm(true);
+
+      // Call Gemini to get a more accurate BPM.
+      const estimatedBpm = await getBpmFromGemini(selectedSong);
+      
+      // If Gemini provides a valid BPM, use it. Otherwise, stick with the default.
+      if (estimatedBpm) {
+        setCurrentBpm(estimatedBpm);
+      }
+      
+      setIsAnalyzingBpm(false);
+    };
+
+    analyzeBpm();
+  }, [selectedSong, stop]);
 
   const handleSelectSong = useCallback((song: Song) => {
-    stop();
+    // This just triggers the useEffect above to run the analysis.
     setSelectedSong(song);
-  }, [stop]);
+  }, []);
 
   const hasErrors = trackLoadErrors.size > 0;
 
@@ -92,15 +119,18 @@ const App: React.FC = () => {
       </main>
       <footer className="bg-slate-950/80 p-4 sticky bottom-0 border-t border-slate-700 backdrop-blur-sm shadow-t-lg">
           <div className="max-w-7xl mx-auto grid grid-cols-3 items-center justify-between gap-4">
-            <div className="flex items-center justify-start gap-4">
-              <Metronome bpm={selectedSong.bpm} timeSignature={selectedSong.timeSignature} currentBeat={currentBeat} playbackRate={playbackRate} />
-              <div className="flex items-center space-x-2">
-                  <span className="text-sm">Metronome</span>
-                  <button
-                      onClick={toggleMetronome}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isMetronomeOn ? 'bg-amber-500' : 'bg-slate-600'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isMetronomeOn ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
+            <div className="flex items-center justify-start gap-6">
+              <Metronome bpm={currentBpm} timeSignature={selectedSong.timeSignature} currentBeat={currentBeat} playbackRate={playbackRate} isAnalyzingBpm={isAnalyzingBpm} />
+              <div className="flex flex-col items-start gap-2">
+                <div className="flex items-center space-x-2">
+                    <span className="text-sm">Metronome</span>
+                    <button
+                        onClick={toggleMetronome}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isMetronomeOn ? 'bg-amber-500' : 'bg-slate-600'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isMetronomeOn ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+                <BpmControl bpm={currentBpm} setBpm={setCurrentBpm} originalBpm={selectedSong.bpm} isAnalyzingBpm={isAnalyzingBpm} />
               </div>
             </div>
             <div className="flex justify-center">

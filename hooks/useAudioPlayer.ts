@@ -4,7 +4,7 @@ import type { Song, Track, TrackState } from '../types';
 // Web Audio API is only available in the browser
 const audioContext = typeof window !== 'undefined' ? new window.AudioContext() : null;
 
-export const useAudioPlayer = (song: Song) => {
+export const useAudioPlayer = (song: Song, bpm: number) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMetronomeOn, setIsMetronomeOn] = useState(false);
@@ -32,6 +32,10 @@ export const useAudioPlayer = (song: Song) => {
   const animationFrameRef = useRef<number | null>(null);
 
   const [trackStates, setTrackStates] = useState<TrackState[]>([]);
+
+  // Calculate the actual playback rate for the audio source nodes.
+  // This syncs the audio speed with the combination of the adjustable BPM and the speed slider.
+  const audioSourcePlaybackRate = song.bpm > 0 ? (bpm * playbackRate) / song.bpm : playbackRate;
 
   // Keep ref in sync with state for scheduler
   useEffect(() => {
@@ -165,7 +169,7 @@ export const useAudioPlayer = (song: Song) => {
     beatCountRef.current = 0;
     setCurrentTime(0);
     pauseTimeRef.current = 0;
-  }, [audioContext]);
+  }, []);
   
   const stopRef = useRef(stop);
   useEffect(() => {
@@ -176,7 +180,7 @@ export const useAudioPlayer = (song: Song) => {
   const animate = useCallback(() => {
       if (!audioContext || !isPlaying) return;
       const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      const newCurrentTime = (realTimeElapsed * playbackRate) + pauseTimeRef.current;
+      const newCurrentTime = (realTimeElapsed * audioSourcePlaybackRate) + pauseTimeRef.current;
 
       if (songDuration > 0 && newCurrentTime >= songDuration) {
           stopRef.current();
@@ -185,7 +189,7 @@ export const useAudioPlayer = (song: Song) => {
 
       setCurrentTime(newCurrentTime);
       animationFrameRef.current = requestAnimationFrame(animate);
-  }, [audioContext, isPlaying, playbackRate, songDuration]);
+  }, [audioContext, isPlaying, audioSourcePlaybackRate, songDuration]);
 
   useEffect(() => {
       if(isPlaying) {
@@ -223,21 +227,21 @@ export const useAudioPlayer = (song: Song) => {
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
-        source.playbackRate.value = playbackRate;
+        source.playbackRate.value = audioSourcePlaybackRate;
         source.connect(gainNode);
         sources.current.set(track.id, source);
       }
     });
-  }, [song.tracks, playbackRate]);
+  }, [song.tracks, audioSourcePlaybackRate]);
 
   // Update playback rate on the fly for active sources
   useEffect(() => {
     sources.current.forEach(source => {
       if (source.playbackRate) {
-        source.playbackRate.value = playbackRate;
+        source.playbackRate.value = audioSourcePlaybackRate;
       }
     });
-  }, [playbackRate]);
+  }, [audioSourcePlaybackRate]);
 
   // FIX: Moved `scheduleNote` before `scheduler` to fix block-scoped variable usage before declaration.
   const scheduleNote = useCallback((beatNumber: number, time: number) => {
@@ -268,12 +272,12 @@ export const useAudioPlayer = (song: Song) => {
           scheduleNote(newBeat, nextNoteTime.current);
       }
       
-      const secondsPerBeat = (60.0 / song.bpm) / playbackRate;
+      const secondsPerBeat = (60.0 / bpm) / playbackRate;
       nextNoteTime.current += secondsPerBeat;
 
       setCurrentBeat(newBeat);
     }
-  }, [audioContext, song.bpm, song.timeSignature, scheduleNote, playbackRate]);
+  }, [audioContext, bpm, song.timeSignature, scheduleNote, playbackRate]);
 
 
   const startScheduler = () => {
@@ -319,7 +323,7 @@ export const useAudioPlayer = (song: Song) => {
   const pause = async () => {
     if (audioContext && isPlaying) {
       const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      pauseTimeRef.current += realTimeElapsed * playbackRate;
+      pauseTimeRef.current += realTimeElapsed * audioSourcePlaybackRate;
       await audioContext.suspend();
       setIsPlaying(false);
       stopScheduler();
