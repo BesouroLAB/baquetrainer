@@ -4,7 +4,6 @@ interface BpmControlProps {
   bpm: number;
   setBpm: (bpm: number) => void;
   originalBpm: number;
-  isAnalyzingBpm?: boolean;
 }
 
 const BpmIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -13,7 +12,7 @@ const BpmIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-export const BpmControl: React.FC<BpmControlProps> = ({ bpm, setBpm, originalBpm, isAnalyzingBpm }) => {
+export const BpmControl: React.FC<BpmControlProps> = ({ bpm, setBpm, originalBpm }) => {
   const handleBpmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBpm(parseInt(e.target.value, 10));
   };
@@ -26,7 +25,7 @@ export const BpmControl: React.FC<BpmControlProps> = ({ bpm, setBpm, originalBpm
   const maxBpm = Math.min(240, Math.round(originalBpm * 1.5));
 
   return (
-    <div className={`flex items-center space-x-3 w-48 transition-opacity ${isAnalyzingBpm ? 'opacity-50 cursor-not-allowed' : ''}`}>
+    <div className="flex items-center space-x-3 w-48">
       <BpmIcon className="w-5 h-5 text-slate-400" />
       <input
         type="range"
@@ -35,17 +34,15 @@ export const BpmControl: React.FC<BpmControlProps> = ({ bpm, setBpm, originalBpm
         step="1"
         value={bpm}
         onChange={handleBpmChange}
-        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:cursor-not-allowed"
+        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
         aria-label="BPM"
-        disabled={isAnalyzingBpm}
       />
       <button
         onClick={handleReset}
-        className="text-xs font-mono w-16 text-center text-slate-400 bg-slate-700/50 hover:bg-slate-700 px-2 py-1 rounded-md transition-colors disabled:cursor-not-allowed"
+        className="text-xs font-mono w-16 text-center text-slate-400 bg-slate-700/50 hover:bg-slate-700 px-2 py-1 rounded-md transition-colors"
         title={`Reset to original BPM (${originalBpm})`}
-        disabled={isAnalyzingBpm}
       >
-        {isAnalyzingBpm ? '...' : `${bpm} BPM`}
+        {`${bpm} BPM`}
       </button>
     </div>
   );

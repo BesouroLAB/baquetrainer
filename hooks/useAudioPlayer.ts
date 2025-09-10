@@ -4,11 +4,9 @@ import type { Song, Track, TrackState } from '../types';
 // Web Audio API is only available in the browser
 const audioContext = typeof window !== 'undefined' ? new window.AudioContext() : null;
 
-export const useAudioPlayer = (song: Song, bpm: number) => {
+export const useAudioPlayer = (song: Song) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMetronomeOn, setIsMetronomeOn] = useState(false);
-  const [currentBeat, setCurrentBeat] = useState(0);
   const [trackLoadErrors, setTrackLoadErrors] = useState<Map<number, string>>(new Map());
   const [masterVolume, setMasterVolume] = useState(1.0);
   const [songDuration, setSongDuration] = useState(0);
@@ -19,28 +17,12 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
   const sources = useRef<Map<number, AudioBufferSourceNode>>(new Map());
   const gainNodes = useRef<Map<number, GainNode>>(new Map());
   const masterGainNode = useRef<GainNode | null>(null);
-
-  const schedulerTimer = useRef<number | null>(null);
-  const nextNoteTime = useRef(0.0);
-  const beatCountRef = useRef(0); // For internal beat counting
-  const isMetronomeOnRef = useRef(isMetronomeOn); // For stable scheduler closure
-  const lookahead = 25.0; // ms
-  const scheduleAheadTime = 0.1; // sec
   
   const startTimeRef = useRef(0);
   const pauseTimeRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
 
   const [trackStates, setTrackStates] = useState<TrackState[]>([]);
-
-  // Calculate the actual playback rate for the audio source nodes.
-  // This syncs the audio speed with the combination of the adjustable BPM and the speed slider.
-  const audioSourcePlaybackRate = song.bpm > 0 ? (bpm * playbackRate) / song.bpm : playbackRate;
-
-  // Keep ref in sync with state for scheduler
-  useEffect(() => {
-    isMetronomeOnRef.current = isMetronomeOn;
-  }, [isMetronomeOn]);
 
   const initializeTrackStates = useCallback((tracks: Track[]) => {
     const initialStates = tracks.map(track => ({
@@ -161,12 +143,6 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
        audioContext.suspend(); 
     }
     setIsPlaying(false);
-    if (schedulerTimer.current) {
-        window.clearInterval(schedulerTimer.current);
-        schedulerTimer.current = null;
-    }
-    setCurrentBeat(0);
-    beatCountRef.current = 0;
     setCurrentTime(0);
     pauseTimeRef.current = 0;
   }, []);
@@ -180,7 +156,7 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
   const animate = useCallback(() => {
       if (!audioContext || !isPlaying) return;
       const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      const newCurrentTime = (realTimeElapsed * audioSourcePlaybackRate) + pauseTimeRef.current;
+      const newCurrentTime = (realTimeElapsed * playbackRate) + pauseTimeRef.current;
 
       if (songDuration > 0 && newCurrentTime >= songDuration) {
           stopRef.current();
@@ -189,7 +165,7 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
 
       setCurrentTime(newCurrentTime);
       animationFrameRef.current = requestAnimationFrame(animate);
-  }, [audioContext, isPlaying, audioSourcePlaybackRate, songDuration]);
+  }, [audioContext, isPlaying, playbackRate, songDuration]);
 
   useEffect(() => {
       if(isPlaying) {
@@ -227,77 +203,21 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
-        source.playbackRate.value = audioSourcePlaybackRate;
+        source.playbackRate.value = playbackRate;
         source.connect(gainNode);
         sources.current.set(track.id, source);
       }
     });
-  }, [song.tracks, audioSourcePlaybackRate]);
+  }, [song.tracks, playbackRate]);
 
   // Update playback rate on the fly for active sources
   useEffect(() => {
     sources.current.forEach(source => {
       if (source.playbackRate) {
-        source.playbackRate.value = audioSourcePlaybackRate;
+        source.playbackRate.value = playbackRate;
       }
     });
-  }, [audioSourcePlaybackRate]);
-
-  // FIX: Moved `scheduleNote` before `scheduler` to fix block-scoped variable usage before declaration.
-  const scheduleNote = useCallback((beatNumber: number, time: number) => {
-    if (!audioContext || !masterGainNode.current) return;
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    
-    osc.frequency.setValueAtTime((beatNumber - 1) % song.timeSignature[0] === 0 ? 880 : 440, time);
-    gain.gain.setValueAtTime(1, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-
-    osc.connect(gain);
-    // Metronome sound should also go through master gain to be controlled
-    gain.connect(masterGainNode.current);
-
-    osc.start(time);
-    osc.stop(time + 0.05);
-  }, [song.timeSignature]);
-
-  const scheduler = useCallback(() => {
-    if(!audioContext) return;
-    
-    while (nextNoteTime.current < audioContext.currentTime + scheduleAheadTime) {
-      beatCountRef.current = (beatCountRef.current % song.timeSignature[0]) + 1;
-      const newBeat = beatCountRef.current;
-      
-      if(isMetronomeOnRef.current) {
-          scheduleNote(newBeat, nextNoteTime.current);
-      }
-      
-      const secondsPerBeat = (60.0 / bpm) / playbackRate;
-      nextNoteTime.current += secondsPerBeat;
-
-      setCurrentBeat(newBeat);
-    }
-  }, [audioContext, bpm, song.timeSignature, scheduleNote, playbackRate]);
-
-
-  const startScheduler = () => {
-      if(!audioContext || schedulerTimer.current) return;
-      
-      nextNoteTime.current = audioContext.currentTime;
-      scheduler();
-      schedulerTimer.current = window.setInterval(scheduler, lookahead);
-  };
-
-  const stopScheduler = () => {
-      if (schedulerTimer.current) {
-          window.clearInterval(schedulerTimer.current);
-          schedulerTimer.current = null;
-      }
-      if(!isPlaying) {
-          setCurrentBeat(0);
-          beatCountRef.current = 0;
-      }
-  };
+  }, [playbackRate]);
 
   const play = async () => {
     if (isLoading || !audioContext) return;
@@ -314,19 +234,14 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
     setIsPlaying(true);
     
     startTimeRef.current = audioContext.currentTime;
-
-    if (isMetronomeOn) {
-      startScheduler();
-    }
   };
 
   const pause = async () => {
     if (audioContext && isPlaying) {
       const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      pauseTimeRef.current += realTimeElapsed * audioSourcePlaybackRate;
+      pauseTimeRef.current += realTimeElapsed * playbackRate;
       await audioContext.suspend();
       setIsPlaying(false);
-      stopScheduler();
     }
   };
 
@@ -367,17 +282,6 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
     setTrackStates(prev => prev.map(t => t.id === trackId ? { ...t, isSoloed: !t.isSoloed } : t));
   };
 
-  const toggleMetronome = () => {
-      setIsMetronomeOn(prev => {
-        const newState = !prev;
-        if(isPlaying){
-            if(newState) startScheduler();
-            else stopScheduler();
-        }
-        return newState;
-      });
-  }
-
   useEffect(() => {
     const resumeAudio = async () => {
         if (audioContext && audioContext.state === 'suspended') {
@@ -410,9 +314,6 @@ export const useAudioPlayer = (song: Song, bpm: number) => {
     setVolume,
     toggleMute,
     toggleSolo,
-    isMetronomeOn,
-    toggleMetronome,
-    currentBeat,
     trackLoadErrors,
     masterVolume,
     setMasterVolume,
