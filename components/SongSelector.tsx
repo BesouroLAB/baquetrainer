@@ -21,7 +21,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({ songs, selectedSong,
                   : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/80 hover:border-slate-600'
               }`}
             >
-              <p className="text-xs text-amber-400/80 font-semibold">Malungos do Interior</p>
+              <p className="text-xs text-amber-400/80 font-semibold">{song.artist}</p>
               <p className="font-bold text-lg text-slate-100 mt-1 truncate" title={song.name}>{song.name}</p>
             </button>
           </li>
