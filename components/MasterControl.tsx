@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 
 interface MasterControlProps {
   volume: number;
@@ -12,26 +12,99 @@ const SpeakerIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 export const MasterControl: React.FC<MasterControlProps> = ({ volume, setVolume }) => {
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value));
+  const faderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // --- Custom Drag Logic Horizontal ---
+  const updateVolumeFromPointer = useCallback((clientX: number) => {
+      if (!faderRef.current) return;
+      
+      const rect = faderRef.current.getBoundingClientRect();
+      const width = rect.width;
+      const left = rect.left;
+      
+      const relativeX = clientX - left;
+      const percentage = Math.max(0, Math.min(1, relativeX / width));
+      
+      setVolume(percentage);
+  }, [setVolume]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      updateVolumeFromPointer(e.clientX);
+      (e.target as Element).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+      if (isDragging) {
+          e.preventDefault();
+          updateVolumeFromPointer(e.clientX);
+      }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+      setIsDragging(false);
+      (e.target as Element).releasePointerCapture(e.pointerId);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+      let newVol = volume;
+      const step = 0.05;
+
+      switch(e.key) {
+          case 'ArrowRight':
+          case 'ArrowUp':
+              newVol = Math.min(1, volume + step);
+              break;
+          case 'ArrowLeft':
+          case 'ArrowDown':
+              newVol = Math.max(0, volume - step);
+              break;
+          default:
+              return;
+      }
+      e.preventDefault();
+      setVolume(newVol);
   };
 
   const volumePercentage = Math.round(volume * 100);
 
   return (
-    <div className="flex items-center space-x-3 w-48">
-      <SpeakerIcon className="w-6 h-6 text-slate-400" />
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={volume}
-        onChange={handleVolumeChange}
-        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+    <div className="flex items-center space-x-2 md:space-x-3 w-full md:w-40 p-2 rounded-lg bg-stone-900/50 border border-white/5 select-none">
+      <SpeakerIcon className={`w-4 h-4 md:w-5 md:h-5 transition-colors flex-shrink-0 ${volume > 0.8 ? 'text-amber-500' : 'text-stone-500'}`} />
+      
+      <div 
+        className="relative flex-grow h-6 flex items-center cursor-pointer touch-none outline-none focus:ring-1 focus:ring-amber-500/50 rounded"
+        ref={faderRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="slider"
+        aria-valuemin={0}
+        aria-valuemax={1}
+        aria-valuenow={volume}
         aria-label="Master Volume"
-      />
-      <span className="text-xs font-mono w-10 text-right text-slate-400">{volumePercentage}%</span>
+      >
+         {/* Visual Track */}
+         <div className="absolute w-full h-1 bg-stone-700 rounded-full overflow-hidden pointer-events-none">
+             <div 
+                className="h-full bg-stone-400"
+                style={{ width: `${volume * 100}%` }}
+             ></div>
+         </div>
+         
+         {/* Thumb */}
+         <div 
+            className="absolute h-3 w-3 bg-stone-200 rounded-full shadow-md pointer-events-none transform -translate-x-1/2"
+            style={{ left: `${volume * 100}%` }}
+         ></div>
+      </div>
+      
+      <span className="text-[10px] font-mono font-bold w-6 md:w-8 text-right text-stone-400 flex-shrink-0">{volumePercentage}%</span>
     </div>
   );
 };

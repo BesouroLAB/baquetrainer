@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface TransportControlsProps {
   isPlaying: boolean;
@@ -46,56 +47,88 @@ const formatTime = (timeInSeconds: number): string => {
 };
 
 export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying, onPlay, onPause, onStop, onReturnToZero, hasErrors, currentTime, songDuration, onSeek }) => {
-  const playButtonTooltip = hasErrors 
-    ? "Cannot play: One or more audio tracks failed to load." 
-    : "Play";
+  const progressPercent = songDuration > 0 ? (currentTime / songDuration) * 100 : 0;
 
   return (
-    <div className="flex flex-col items-center space-y-2 w-full max-w-md">
-      <div className="flex items-center space-x-4">
-        <button onClick={onReturnToZero} className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors" title="Return to Start">
-          <RewindIcon className="w-6 h-6" />
-        </button>
-        <button onClick={onStop} className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors" title="Stop">
-          <StopIcon className="w-6 h-6" />
-        </button>
+    <div className="flex flex-col items-center justify-center space-y-1 md:space-y-2 w-full max-w-[95%] md:max-w-lg">
+      <div className="flex items-center space-x-6">
+        <motion.button 
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onReturnToZero} 
+          className="text-stone-500 hover:text-stone-300 transition-colors p-2" 
+          title="Início"
+        >
+          <RewindIcon className="w-5 h-5" />
+        </motion.button>
         
         {isPlaying ? (
-            <button 
+            <motion.button 
+                whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onPause}
-                className="p-4 rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors"
+                className="p-3 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-stone-900 shadow-lg shadow-amber-900/40 border border-amber-300/20"
                 aria-label="Pause"
-                title="Pause"
             >
                 <PauseIcon className="w-8 h-8" />
-            </button>
+            </motion.button>
         ) : (
-            <div title={playButtonTooltip}>
-                <button 
-                    onClick={onPlay}
-                    className="p-4 rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors disabled:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={hasErrors}
-                    aria-label="Play"
-                >
-                    <PlayIcon className="w-8 h-8" />
-                </button>
-            </div>
+            <motion.button 
+                whileHover={!hasErrors ? { scale: 1.1, boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" } : {}}
+                whileTap={!hasErrors ? { scale: 0.95 } : {}}
+                onClick={onPlay}
+                className={`p-3 rounded-full shadow-lg border border-amber-300/20 ${
+                    hasErrors 
+                    ? 'bg-stone-800 text-stone-600 cursor-not-allowed' 
+                    : 'bg-gradient-to-br from-amber-400 to-amber-600 text-stone-900 shadow-amber-900/40'
+                }`}
+                disabled={hasErrors}
+                aria-label="Play"
+            >
+                <PlayIcon className="w-8 h-8 ml-0.5" />
+            </motion.button>
         )}
 
+        <motion.button 
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onStop} 
+          className="text-stone-500 hover:text-stone-300 transition-colors p-2" 
+          title="Parar"
+        >
+          <StopIcon className="w-5 h-5" />
+        </motion.button>
       </div>
-       <div className="w-full flex items-center gap-2 text-slate-400">
-        <span className="font-mono text-xs">{formatTime(currentTime)}</span>
-        <input
-          type="range"
-          min="0"
-          max={songDuration || 1}
-          value={currentTime}
-          onChange={(e) => onSeek(parseFloat(e.target.value))}
-          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Song progress"
-          disabled={hasErrors || songDuration === 0}
-        />
-        <span className="font-mono text-xs">{formatTime(songDuration)}</span>
+
+       <div className="w-full flex items-center gap-2 md:gap-3">
+        <span className="font-mono text-[10px] text-stone-500 w-8 text-right">{formatTime(currentTime)}</span>
+        
+        <div className="relative flex-grow h-6 flex items-center group">
+            <div className="absolute w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
+                <motion.div 
+                    className="h-full bg-amber-500/80"
+                    style={{ width: `${progressPercent}%` }}
+                    layoutId="progressbar"
+                />
+            </div>
+             <input
+                type="range"
+                min="0"
+                max={songDuration || 1}
+                step="0.1"
+                value={currentTime}
+                onChange={(e) => onSeek(parseFloat(e.target.value))}
+                className="w-full h-6 opacity-0 cursor-pointer absolute z-10"
+                disabled={hasErrors || songDuration === 0}
+            />
+            {/* Visual thumb for hover effect */}
+            <div 
+                className="absolute h-3 w-3 bg-stone-200 rounded-full shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ left: `calc(${progressPercent}% - 6px)` }}
+            ></div>
+        </div>
+        
+        <span className="font-mono text-[10px] text-stone-500 w-8">{formatTime(songDuration)}</span>
       </div>
     </div>
   );

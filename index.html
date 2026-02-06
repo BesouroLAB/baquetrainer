@@ -7,13 +7,27 @@
     <title>BaqueTreino | Nação Sankofa Baobá</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Custom styles for vertical range input */
+      /* Custom styles for vertical range input to ensure it overlays correctly */
       input[type=range][orient=vertical] {
         writing-mode: bt-lr; /* IE */
         -webkit-appearance: slider-vertical; /* WebKit */
+        appearance: slider-vertical;
+      }
+      
+      /* Global scrollbar styling for the dark organic theme */
+      ::-webkit-scrollbar {
         width: 8px;
-        height: 120px;
-        padding: 0 5px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1c1917; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #44403c; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #d97706; 
       }
     </style>
   <script type="importmap">
@@ -22,12 +36,13 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.0.8"
   }
 }
 </script>
 </head>
-  <body class="bg-black text-white">
+  <body class="bg-[#0c0a09] text-stone-200 antialiased selection:bg-amber-500/30 selection:text-amber-200">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
