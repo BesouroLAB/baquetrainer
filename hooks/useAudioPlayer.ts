@@ -65,17 +65,31 @@ export const useAudioPlayer = (song: Song) => {
           return Promise.resolve(null);
         }
 
-        return fetch(track.path)
+        return fetch(track.path, { mode: 'cors' })
           .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status} for ${track.path}`);
             }
             return response.arrayBuffer();
           })
-          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+          .then(arrayBuffer => {
+            console.log(`Fetched ${track.instrument}: ${arrayBuffer.byteLength} bytes`);
+            if (arrayBuffer.byteLength < 1000) {
+              console.warn(`Warning: Audio data for ${track.instrument} is very small (${arrayBuffer.byteLength} bytes). This might be a Git LFS pointer instead of the actual audio file.`);
+            }
+            return audioContext.decodeAudioData(arrayBuffer)
+              .catch(decodeError => {
+                console.error(`Decoding failed for ${track.instrument}:`, decodeError);
+                throw new Error(`Decoding failed: ${decodeError.message}`);
+              });
+          })
           .catch(error => {
-              console.error(`Failed to load or decode audio for ${track.instrument}:`, error);
-              setTrackLoadErrors(prev => new Map(prev).set(track.id, error.message));
+              console.error(`Failed to load or decode audio for ${track.instrument} (${track.path}):`, error);
+              setTrackLoadErrors(prev => {
+                  const next = new Map(prev);
+                  next.set(track.id, error.message);
+                  return next;
+              });
               return null;
           })
       });
@@ -92,6 +106,12 @@ export const useAudioPlayer = (song: Song) => {
             }
         }
       });
+      
+      // Fallback duration for Show Mode (ID 100) if no tracks loaded
+      if (maxDuration === 0 && song.id === 100) {
+          maxDuration = 600; // 10 minutes default
+      }
+      
       setSongDuration(maxDuration);
       setIsLoading(false);
     };
@@ -314,6 +334,10 @@ export const useAudioPlayer = (song: Song) => {
   }, []);
 
 
+    const getAudioBuffer = useCallback((trackId: number) => {
+        return audioBuffers.current.get(trackId);
+    }, []);
+
   return {
     isLoading,
     isPlaying,
@@ -334,5 +358,6 @@ export const useAudioPlayer = (song: Song) => {
     seek,
     playbackRate,
     setPlaybackRate,
+    getAudioBuffer,
   };
 };

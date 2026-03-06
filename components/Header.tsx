@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 
 interface HeaderProps {
   onToggleMenu?: () => void;
+  currentMode: 'songs' | 'show';
+  onToggleMode: (mode: 'songs' | 'show') => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleMenu }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onToggleMode }) => {
   return (
     <header className="bg-transparent pt-4 px-4 md:px-6 pb-0 flex justify-between items-center z-50 flex-shrink-0">
       <div className="flex items-center space-x-3">
@@ -55,10 +57,31 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu }) => {
         </div>
       </div>
       
-      <div className="hidden md:block">
-          <p className="text-xs font-mono text-stone-500 uppercase tracking-widest border border-stone-800 px-3 py-1 rounded-full bg-stone-900/50">
-             Versão 2.2 • Baobá Digital
-          </p>
+      {/* Mode Toggle */}
+      <div className="flex bg-stone-900/50 p-1 rounded-full border border-stone-800">
+          <button
+            onClick={() => onToggleMode('songs')}
+            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${
+                currentMode === 'songs' 
+                ? 'bg-amber-500 text-stone-900 shadow-lg' 
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            Mesa de Som
+          </button>
+          <button
+            onClick={() => onToggleMode('show')}
+            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all flex items-center space-x-1 ${
+                currentMode === 'show' 
+                ? 'bg-amber-500 text-stone-900 shadow-lg' 
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <span>Modo Arranjo</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+          </button>
       </div>
     </header>
   );
