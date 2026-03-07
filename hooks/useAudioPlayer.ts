@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Song, Track, TrackState } from '../types';
 
 // Web Audio API is only available in the browser
-const audioContext = typeof window !== 'undefined' ? new window.AudioContext() : null;
+const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || (window as any).webkitAudioContext)() : null;
 
 export const useAudioPlayer = (song: Song) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -230,6 +230,15 @@ export const useAudioPlayer = (song: Song) => {
     });
   }, [song.tracks, playbackRate]);
 
+  const handleSetPlaybackRate = useCallback((rate: number) => {
+    if (audioContext && isPlaying) {
+      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
+      pauseTimeRef.current += realTimeElapsed * playbackRate;
+      startTimeRef.current = audioContext.currentTime;
+    }
+    setPlaybackRate(rate);
+  }, [audioContext, isPlaying, playbackRate]);
+
   // Update playback rate on the fly for active sources
   useEffect(() => {
     sources.current.forEach(source => {
@@ -357,7 +366,7 @@ export const useAudioPlayer = (song: Song) => {
     songDuration,
     seek,
     playbackRate,
-    setPlaybackRate,
+    setPlaybackRate: handleSetPlaybackRate,
     getAudioBuffer,
   };
 };

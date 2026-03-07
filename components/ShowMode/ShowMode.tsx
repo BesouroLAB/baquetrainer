@@ -61,8 +61,7 @@ export const ShowMode: React.FC<ShowModeProps> = ({
   }, [currentTime, isPlaying, zoom]);
 
   // Calculate total width
-  const SIDEBAR_WIDTH = 192; // 12rem (w-48)
-  const totalWidth = Math.max(duration * zoom, 1000) + SIDEBAR_WIDTH; // Ensure at least some width + sidebar
+  const totalWidth = Math.max(duration * zoom, 1000) + 192; // Ensure at least some width + sidebar
 
   // Format time for display
   const formatTime = (time: number) => {
@@ -138,7 +137,7 @@ export const ShowMode: React.FC<ShowModeProps> = ({
                 {/* Playhead Line */}
                 <div 
                     className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-25 pointer-events-none shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-                    style={{ left: (currentTime * zoom) + SIDEBAR_WIDTH }}
+                    style={{ left: `calc(12rem + ${currentTime * zoom}px)` }}
                 >
                     <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-amber-500 transform rotate-45"></div>
                 </div>
@@ -146,7 +145,7 @@ export const ShowMode: React.FC<ShowModeProps> = ({
                 {/* Click to seek overlay */}
                 <div 
                     className="absolute top-0 bottom-0 right-0 z-20 cursor-crosshair"
-                    style={{ left: SIDEBAR_WIDTH }}
+                    style={{ left: '12rem' }}
                     onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const x = e.clientX - rect.left;

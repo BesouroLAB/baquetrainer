@@ -185,7 +185,7 @@ const WaveformChunk: React.FC<WaveformChunkProps> = ({ chunkIndex, buffer, color
     return (
         <canvas 
             ref={canvasRef} 
-            className="absolute top-0 h-full" 
+            className="absolute top-0 h-full max-w-none" 
             style={{ left: chunkIndex * CHUNK_WIDTH }}
         />
     );
