@@ -9,22 +9,22 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onToggleMode }) => {
   return (
-    <header className="bg-transparent pt-4 px-4 md:px-6 pb-0 flex justify-between items-center z-50 flex-shrink-0">
-      <div className="flex items-center space-x-3">
+    <header className="bg-transparent pt-2 md:pt-4 px-3 md:px-6 pb-0 flex justify-between items-center z-50 flex-shrink-0">
+      <div className="flex items-center space-x-2 md:space-x-3">
         {/* Mobile Menu Button */}
         <button 
           onClick={onToggleMenu}
-          className="md:hidden p-2 -ml-2 text-stone-400 hover:text-amber-500 transition-colors"
+          className="md:hidden p-1.5 -ml-1.5 text-stone-400 hover:text-amber-500 transition-colors"
           aria-label="Abrir menu de músicas"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 md:w-8 md:h-8">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
         </button>
 
         {/* Logo Icon */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-900/20">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-stone-900" viewBox="0 0 20 20" fill="currentColor">
+        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-900/20">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-stone-900" viewBox="0 0 20 20" fill="currentColor">
                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.972 7.972 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
             </svg>
         </div>
@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onTog
         {/* Title Area with SankofaPlayer */}
         <div className="flex flex-col justify-center">
             <div className="flex items-baseline">
-                <h1 className="text-xl font-bold text-stone-200 tracking-wide leading-none">
+                <h1 className="text-lg md:text-xl font-bold text-stone-200 tracking-wide leading-none">
                 <span className="text-amber-500">Baque</span>Treino
                 </h1>
                 
@@ -58,29 +58,33 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onTog
       </div>
       
       {/* Mode Toggle */}
-      <div className="flex bg-stone-900/50 p-1 rounded-full border border-stone-800">
+      <div className="flex bg-stone-900/80 p-1.5 rounded-full border border-stone-700 shadow-inner">
           <button
             onClick={() => onToggleMode('songs')}
-            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${
+            className={`px-4 py-2 md:px-6 md:py-2.5 text-xs md:text-sm font-bold rounded-full transition-all flex items-center space-x-2 ${
                 currentMode === 'songs' 
-                ? 'bg-amber-500 text-stone-900 shadow-lg' 
-                : 'text-stone-400 hover:text-stone-200'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
             }`}
           >
-            Mesa de Som
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
+              <path d="M6 3a.75.75 0 01.75.75v2.25a2.25 2.25 0 000 4.5v10.5a.75.75 0 01-1.5 0v-10.5a2.25 2.25 0 000-4.5V3.75A.75.75 0 016 3zM12 3a.75.75 0 01.75.75v10.5a2.25 2.25 0 000 4.5v2.25a.75.75 0 01-1.5 0v-2.25a2.25 2.25 0 000-4.5V3.75A.75.75 0 0112 3zM18 3a.75.75 0 01.75.75v6.75a2.25 2.25 0 000 4.5v6.75a.75.75 0 01-1.5 0v-6.75a2.25 2.25 0 000-4.5V3.75A.75.75 0 0118 3z" />
+            </svg>
+            <span>Mixer</span>
           </button>
           <button
             onClick={() => onToggleMode('show')}
-            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all flex items-center space-x-1 ${
+            className={`px-4 py-2 md:px-6 md:py-2.5 text-xs md:text-sm font-bold rounded-full transition-all flex items-center space-x-2 ${
                 currentMode === 'show' 
-                ? 'bg-amber-500 text-stone-900 shadow-lg' 
-                : 'text-stone-400 hover:text-stone-200'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
             }`}
           >
-            <span>Modo Arranjo</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
+              <path fillRule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM6 4.5a1.5 1.5 0 00-1.5 1.5v12A1.5 1.5 0 006 19.5h12a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H6z" clipRule="evenodd" />
+              <path d="M7.5 9a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5A.75.75 0 017.5 9zM7.5 12a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5A.75.75 0 017.5 12zM7.5 15a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5A.75.75 0 017.5 15z" />
             </svg>
+            <span>Linha do Tempo</span>
           </button>
       </div>
     </header>

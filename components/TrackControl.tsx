@@ -111,33 +111,33 @@ export const TrackControl: React.FC<TrackControlProps> = ({ trackState, setVolum
   return (
     <motion.div 
         layout
-        className={`flex flex-col items-center p-3 bg-[#131110] rounded-2xl w-28 h-full border border-white/5 shadow-xl relative overflow-hidden group select-none`}
+        className={`flex flex-col items-center p-2 md:p-3 bg-[#131110] rounded-xl md:rounded-2xl w-20 md:w-28 h-full border border-white/5 shadow-xl relative overflow-hidden group select-none`}
     >
       {/* Background texture */}
       <div className="absolute inset-0 bg-stone-800/20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
       {/* Instrument Name */}
-      <div className="text-center w-full mb-3 relative z-10">
-        <div className="flex items-center justify-center space-x-1 h-6">
+      <div className="text-center w-full mb-2 md:mb-3 relative z-10">
+        <div className="flex items-center justify-center space-x-1 h-4 md:h-6">
             {hasError ? (
                 <div title={errorMessage}>
-                    <ErrorIcon className="w-4 h-4 text-red-500" />
+                    <ErrorIcon className="w-3 h-3 md:w-4 md:h-4 text-red-500" />
                 </div>
             ) : (
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>
+                 <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500/50 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>
             )}
         </div>
-        <p className="text-xs font-bold uppercase tracking-wider text-stone-400 truncate w-full" title={instrument}>
+        <p className="text-[9px] md:text-xs font-bold uppercase tracking-wider text-stone-400 truncate w-full" title={instrument}>
             {instrument}
         </p>
       </div>
       
       {/* Mute/Solo Buttons */}
-      <div className="flex flex-col space-y-2 mb-4 w-full px-1 z-10">
+      <div className="flex flex-col space-y-1 md:space-y-2 mb-2 md:mb-4 w-full px-0.5 md:px-1 z-10">
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => toggleSolo(id)}
-          className={`w-full py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all duration-200 ${
+          className={`w-full py-1 md:py-1.5 rounded md:rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-widest border transition-all duration-200 ${
             isSoloed 
                 ? 'bg-amber-500 text-stone-900 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
                 : 'bg-stone-800/50 text-stone-500 border-stone-700 hover:bg-stone-700 hover:text-stone-300'
@@ -149,7 +149,7 @@ export const TrackControl: React.FC<TrackControlProps> = ({ trackState, setVolum
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => toggleMute(id)}
-          className={`w-full py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all duration-200 ${
+          className={`w-full py-1 md:py-1.5 rounded md:rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-widest border transition-all duration-200 ${
             isMuted 
                 ? 'bg-red-500/90 text-white border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
                 : 'bg-stone-800/50 text-stone-500 border-stone-700 hover:bg-stone-700 hover:text-stone-300'

@@ -48,9 +48,9 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
   return (
     <div className="flex items-center bg-stone-900/40 border-b border-white/5 h-24">
       {/* Track Controls (Left Sidebar) */}
-      <div className="w-48 flex-shrink-0 p-2 border-r border-white/5 flex flex-col justify-center gap-2 bg-stone-900/80 backdrop-blur-md z-30 sticky left-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-bold text-stone-300 truncate w-24" title={name}>
+      <div className="w-32 md:w-48 flex-shrink-0 p-2 border-r border-white/5 flex flex-col justify-center gap-2 bg-stone-900/80 backdrop-blur-md z-30 sticky left-0">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-1 gap-1 md:gap-0">
+          <span className="text-[10px] md:text-xs font-bold text-stone-300 truncate w-full md:w-24" title={name}>
             {name}
           </span>
           <div className="flex gap-1">
@@ -140,13 +140,10 @@ const WaveformChunk: React.FC<WaveformChunkProps> = ({ chunkIndex, buffer, color
         // Draw waveform for this chunk
         const data = buffer.getChannelData(0);
         // Calculate sample range
-        // total samples = data.length
-        // total pixels = totalWidth
-        // samples per pixel = data.length / totalWidth
-        const samplesPerPixel = data.length / totalWidth;
+        // samples per pixel = sampleRate / zoom
+        const samplesPerPixel = buffer.sampleRate / zoom;
         
         const startSample = Math.floor(startPixel * samplesPerPixel);
-        // We iterate 'width' pixels
         
         const amp = height / 2;
         ctx.fillStyle = color;
@@ -161,11 +158,10 @@ const WaveformChunk: React.FC<WaveformChunkProps> = ({ chunkIndex, buffer, color
             
             // Optimization: Don't iterate too many samples if zoomed out a lot
             // Just take a stride if samplesPerPixel is huge
-            const step = Math.max(1, Math.ceil((pixelEndSample - pixelStartSample) / 10)); // Check at most 10 points per pixel if very dense? No, we need peaks.
-            // Actually, for accuracy we should check all, but for performance we might skip.
-            // Let's check all for now, but be careful.
+            const step = Math.max(1, Math.floor(samplesPerPixel / 100)); // check max 100 points per pixel
             
-            for (let j = pixelStartSample; j < pixelEndSample; j++) {
+            const end = Math.min(pixelEndSample, data.length);
+            for (let j = pixelStartSample; j < end; j += step) {
                 const datum = data[j];
                 if (datum < min) min = datum;
                 if (datum > max) max = datum;

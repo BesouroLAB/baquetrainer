@@ -71,8 +71,8 @@ export const MasterControl: React.FC<MasterControlProps> = ({ volume, setVolume 
   const volumePercentage = Math.round(volume * 100);
 
   return (
-    <div className="flex items-center space-x-2 md:space-x-3 w-full md:w-40 p-2 rounded-lg bg-stone-900/50 border border-white/5 select-none">
-      <SpeakerIcon className={`w-4 h-4 md:w-5 md:h-5 transition-colors flex-shrink-0 ${volume > 0.8 ? 'text-amber-500' : 'text-stone-500'}`} />
+    <div className="flex items-center space-x-2 md:space-x-3 w-full md:w-40 p-1 md:p-2 rounded-lg bg-stone-900/50 border border-white/5 select-none">
+      <SpeakerIcon className={`w-3 h-3 md:w-5 md:h-5 transition-colors flex-shrink-0 ${volume > 0.8 ? 'text-amber-500' : 'text-stone-500'}`} />
       
       <div 
         className="relative flex-grow h-6 flex items-center cursor-pointer touch-none outline-none focus:ring-1 focus:ring-amber-500/50 rounded"

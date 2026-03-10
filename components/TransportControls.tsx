@@ -51,15 +51,15 @@ export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying,
 
   return (
     <div className="flex flex-col items-center justify-center space-y-1 md:space-y-2 w-full max-w-[95%] md:max-w-lg">
-      <div className="flex items-center space-x-6">
+      <div className="flex items-center space-x-4 md:space-x-6">
         <motion.button 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onReturnToZero} 
-          className="text-stone-500 hover:text-stone-300 transition-colors p-2" 
+          className="text-stone-500 hover:text-stone-300 transition-colors p-1.5 md:p-2" 
           title="Início"
         >
-          <RewindIcon className="w-5 h-5" />
+          <RewindIcon className="w-4 h-4 md:w-5 md:h-5" />
         </motion.button>
         
         {isPlaying ? (
@@ -67,17 +67,17 @@ export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying,
                 whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onPause}
-                className="p-3 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-stone-900 shadow-lg shadow-amber-900/40 border border-amber-300/20"
+                className="p-2 md:p-3 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-stone-900 shadow-lg shadow-amber-900/40 border border-amber-300/20"
                 aria-label="Pause"
             >
-                <PauseIcon className="w-8 h-8" />
+                <PauseIcon className="w-6 h-6 md:w-8 md:h-8" />
             </motion.button>
         ) : (
             <motion.button 
                 whileHover={!hasErrors ? { scale: 1.1, boxShadow: "0 0 20px rgba(245, 158, 11, 0.4)" } : {}}
                 whileTap={!hasErrors ? { scale: 0.95 } : {}}
                 onClick={onPlay}
-                className={`p-3 rounded-full shadow-lg border border-amber-300/20 ${
+                className={`p-2 md:p-3 rounded-full shadow-lg border border-amber-300/20 ${
                     hasErrors 
                     ? 'bg-stone-800 text-stone-600 cursor-not-allowed' 
                     : 'bg-gradient-to-br from-amber-400 to-amber-600 text-stone-900 shadow-amber-900/40'
@@ -85,7 +85,7 @@ export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying,
                 disabled={hasErrors}
                 aria-label="Play"
             >
-                <PlayIcon className="w-8 h-8 ml-0.5" />
+                <PlayIcon className="w-6 h-6 md:w-8 md:h-8 ml-0.5" />
             </motion.button>
         )}
 
@@ -93,10 +93,10 @@ export const TransportControls: React.FC<TransportControlsProps> = ({ isPlaying,
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onStop} 
-          className="text-stone-500 hover:text-stone-300 transition-colors p-2" 
+          className="text-stone-500 hover:text-stone-300 transition-colors p-1.5 md:p-2" 
           title="Parar"
         >
-          <StopIcon className="w-5 h-5" />
+          <StopIcon className="w-4 h-4 md:w-5 md:h-5" />
         </motion.button>
       </div>
 

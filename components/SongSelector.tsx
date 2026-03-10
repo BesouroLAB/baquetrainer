@@ -19,7 +19,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({ songs, selectedSong,
               whileHover={{ x: 4 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onSelectSong(song)}
-              className={`w-full text-left p-3 rounded-xl transition-all duration-300 flex items-center space-x-3 border ${
+              className={`w-full text-left p-2 md:p-3 rounded-xl transition-all duration-300 flex items-center space-x-2 md:space-x-3 border ${
                 isSelected
                   ? 'bg-gradient-to-r from-amber-500/10 to-transparent border-amber-500/30 shadow-[inset_2px_0_0_0_rgba(245,158,11,1)]'
                   : 'bg-transparent border-transparent hover:bg-white/5 text-stone-500 hover:text-stone-300'

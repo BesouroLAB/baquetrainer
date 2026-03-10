@@ -222,7 +222,6 @@ export const useAudioPlayer = (song: Song) => {
       if (buffer && gainNode && audioContext) {
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
-        source.loop = true;
         source.playbackRate.value = playbackRate;
         source.connect(gainNode);
         sources.current.set(track.id, source);
@@ -258,18 +257,24 @@ export const useAudioPlayer = (song: Song) => {
     createAndConnectSources();
     
     const offset = pauseTimeRef.current % songDuration;
+    const startTime = audioContext.currentTime + 0.05; // Schedule 50ms in the future for perfect sync
     
-    sources.current.forEach(source => source.start(audioContext.currentTime, offset));
+    sources.current.forEach((source, trackId) => {
+      const buffer = audioBuffers.current.get(trackId);
+      if (buffer && offset < buffer.duration) {
+        source.start(startTime, offset);
+      }
+    });
     setIsPlaying(true);
     
-    startTimeRef.current = audioContext.currentTime;
+    startTimeRef.current = startTime;
   };
 
   const pause = async () => {
     if (audioContext && isPlaying) {
-      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
+      const realTimeElapsed = Math.max(0, audioContext.currentTime - startTimeRef.current);
       pauseTimeRef.current += realTimeElapsed * playbackRate;
-      await audioContext.suspend();
+      stopSources();
       setIsPlaying(false);
     }
   };
@@ -291,11 +296,16 @@ export const useAudioPlayer = (song: Song) => {
         createAndConnectSources();
         
         const offset = newTime % songDuration;
-        sources.current.forEach(source => {
-            source.start(audioContext.currentTime, offset)
+        const startTime = audioContext.currentTime + 0.05;
+        
+        sources.current.forEach((source, trackId) => {
+            const buffer = audioBuffers.current.get(trackId);
+            if (buffer && offset < buffer.duration) {
+                source.start(startTime, offset);
+            }
         });
 
-        startTimeRef.current = audioContext.currentTime;
+        startTimeRef.current = startTime;
     }
   }, [audioContext, isPlaying, songDuration, stopSources, createAndConnectSources]);
 

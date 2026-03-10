@@ -74,47 +74,47 @@ export const ShowMode: React.FC<ShowModeProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#131110] text-stone-300 overflow-hidden">
       {/* Toolbar */}
-      <div className="h-16 border-b border-white/10 flex items-center justify-between px-4 bg-stone-900/80 backdrop-blur-md z-20">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-bold text-amber-500 flex items-center gap-2 truncate max-w-[200px] md:max-w-md">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0">
+      <div className="h-auto md:h-16 py-2 md:py-0 border-b border-white/10 flex flex-col md:flex-row items-center justify-between px-2 md:px-4 bg-stone-900/80 backdrop-blur-md z-20 gap-2 md:gap-0">
+        <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-between md:justify-start">
+          <h2 className="text-sm md:text-lg font-bold text-amber-500 flex items-center gap-1 md:gap-2 truncate max-w-[150px] md:max-w-md">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0">
               <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm14.024-.983a1.125 1.125 0 010 1.966l-5.603 3.113A1.125 1.125 0 019 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113z" clipRule="evenodd" />
             </svg>
             {song.name}
           </h2>
-          <div className="h-6 w-px bg-white/10 mx-2"></div>
-          <div className="flex items-center space-x-2">
-             <button onClick={onStop} className="p-2 hover:bg-white/5 rounded-full text-stone-400 hover:text-white transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+          <div className="h-4 md:h-6 w-px bg-white/10 mx-1 md:mx-2"></div>
+          <div className="flex items-center space-x-1 md:space-x-2">
+             <button onClick={onStop} className="p-1.5 md:p-2 hover:bg-white/5 rounded-full text-stone-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
                   <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
                 </svg>
              </button>
-             <button onClick={onPlayPause} className="p-3 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full shadow-lg shadow-amber-500/20 transition-all transform hover:scale-105">
+             <button onClick={onPlayPause} className="p-2 md:p-3 bg-amber-500 hover:bg-amber-400 text-stone-900 rounded-full shadow-lg shadow-amber-500/20 transition-all transform hover:scale-105">
                 {isPlaying ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-6 md:h-6">
                     <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 ml-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 md:w-6 md:h-6 ml-0.5">
                     <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
                   </svg>
                 )}
              </button>
           </div>
-          <div className="font-mono text-xl text-amber-500 w-24 text-center">
+          <div className="font-mono text-sm md:text-xl text-amber-500 w-16 md:w-24 text-center">
             {formatTime(currentTime)}
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-            <span className="text-xs text-stone-500 uppercase tracking-widest">Zoom</span>
+        <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-center md:justify-end">
+            <span className="text-[10px] md:text-xs text-stone-500 uppercase tracking-widest">Zoom</span>
             <input 
                 type="range" 
                 min="10" 
                 max="200" 
                 value={zoom} 
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-32 h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full max-w-[150px] md:w-32 h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
         </div>
       </div>
@@ -122,7 +122,7 @@ export const ShowMode: React.FC<ShowModeProps> = ({
       {/* Timeline Area */}
       <div className="flex-grow overflow-hidden relative flex flex-col">
         {/* Ruler (Optional - simplified for now) */}
-        <div className="h-6 bg-stone-900 border-b border-white/5 flex-shrink-0 relative overflow-hidden" style={{ marginLeft: '12rem' }}> {/* 12rem = w-48 sidebar */}
+        <div className="h-6 bg-stone-900 border-b border-white/5 flex-shrink-0 relative overflow-hidden ml-32 md:ml-48"> {/* 8rem/12rem = w-32/w-48 sidebar */}
              {/* We could render ticks here based on zoom and scrollLeft */}
         </div>
 
@@ -130,22 +130,24 @@ export const ShowMode: React.FC<ShowModeProps> = ({
         <div 
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-grow overflow-x-auto overflow-y-auto relative custom-scrollbar"
+            className="flex-grow overflow-x-auto overflow-y-auto relative custom-scrollbar [--sidebar-width:8rem] md:[--sidebar-width:12rem]"
         >
             <div className="relative" style={{ width: totalWidth, minWidth: '100%' }}>
                 
-                {/* Playhead Line */}
-                <div 
-                    className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-25 pointer-events-none shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-                    style={{ left: `calc(12rem + ${currentTime * zoom}px)` }}
-                >
-                    <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-amber-500 transform rotate-45"></div>
+                {/* Playhead Container */}
+                <div className="absolute top-0 bottom-0 right-0 pointer-events-none z-25 left-32 md:left-48">
+                    {/* Playhead Line */}
+                    <div 
+                        className="absolute top-0 bottom-0 w-0.5 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                        style={{ left: `${currentTime * zoom}px` }}
+                    >
+                        <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-amber-500 transform rotate-45"></div>
+                    </div>
                 </div>
 
                 {/* Click to seek overlay */}
                 <div 
-                    className="absolute top-0 bottom-0 right-0 z-20 cursor-crosshair"
-                    style={{ left: '12rem' }}
+                    className="absolute top-0 bottom-0 right-0 z-20 cursor-crosshair left-32 md:left-48"
                     onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const x = e.clientX - rect.left;
@@ -186,7 +188,7 @@ export const ShowMode: React.FC<ShowModeProps> = ({
                                 />
                                 {/* Seek handler for this track's waveform area */}
                                 <div 
-                                    className="absolute top-0 bottom-0 left-48 right-0 cursor-crosshair z-20"
+                                    className="absolute top-0 bottom-0 left-32 md:left-48 right-0 cursor-crosshair z-20"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         const rect = e.currentTarget.getBoundingClientRect();

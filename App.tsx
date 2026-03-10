@@ -78,7 +78,7 @@ const App: React.FC = () => {
                             <div className="absolute inset-0 rounded-full border-4 border-stone-800"></div>
                             <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
                         </div>
-                        <p className="text-amber-500/80 font-medium tracking-wide animate-pulse text-sm">Carregando Arranjo...</p>
+                        <p className="text-amber-500/80 font-medium tracking-wide animate-pulse text-sm">Carregando Linha do Tempo...</p>
                     </div>
                 </div>
             )}
@@ -98,7 +98,7 @@ const App: React.FC = () => {
             />
         </div>
       ) : (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 p-4 min-h-0 relative">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-[320px_1fr] gap-2 md:gap-4 p-2 md:p-4 min-h-0 relative">
             
             {/* Mobile Sidebar Overlay (Drawer) */}
             <AnimatePresence>
@@ -116,9 +116,9 @@ const App: React.FC = () => {
                     animate={{ x: 0 }}
                     exit={{ x: '-100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-[#131110] border-r border-white/10 z-[60] flex flex-col p-5 shadow-2xl md:hidden"
+                    className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-[#131110] border-r border-white/10 z-[60] flex flex-col p-4 shadow-2xl md:hidden"
                 >
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-amber-500">Músicas</h2>
                         <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-stone-400">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -218,22 +218,22 @@ const App: React.FC = () => {
             <main className="bg-stone-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] pointer-events-none"></div>
 
-            <section className="flex-grow flex flex-col p-4 md:p-6 min-h-0 relative z-10">
-                <div className="flex justify-between items-end border-b border-white/5 pb-4 mb-4 flex-shrink-0">
+            <section className="flex-grow flex flex-col p-3 md:p-6 min-h-0 relative z-10">
+                <div className="flex justify-between items-end border-b border-white/5 pb-3 md:pb-4 mb-3 md:mb-4 flex-shrink-0">
                     <div className="overflow-hidden">
                     <motion.h2 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         key={selectedSong.id}
-                        className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-stone-100 to-stone-400 truncate"
+                        className="text-lg md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-stone-100 to-stone-400 truncate"
                     >
                         {selectedSong.name}
                     </motion.h2>
                     <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-[10px] md:text-xs bg-stone-800/50 text-stone-400 px-2 py-0.5 rounded-full border border-white/5">
+                        <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
                         {selectedSong.bpm} BPM
                         </span>
-                        <span className="text-[10px] md:text-xs bg-stone-800/50 text-stone-400 px-2 py-0.5 rounded-full border border-white/5">
+                        <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
                         {selectedSong.timeSignature.join('/')}
                         </span>
                     </div>
@@ -243,10 +243,10 @@ const App: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={resetMixer}
-                        className="flex items-center space-x-2 px-3 py-2 md:px-4 text-sm font-medium bg-stone-800/50 hover:bg-stone-700 text-stone-300 rounded-full border border-white/5 transition-colors shadow-lg shadow-black/20"
+                        className="flex items-center space-x-1 md:space-x-2 px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-sm font-medium bg-stone-800/50 hover:bg-stone-700 text-stone-300 rounded-full border border-white/5 transition-colors shadow-lg shadow-black/20"
                         title="Resetar mesa"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.885-.666A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566z" clipRule="evenodd" />
                         </svg>
                         <span className="hidden md:inline">Resetar Mix</span>
@@ -288,9 +288,6 @@ const App: React.FC = () => {
                         toggleMute={toggleMute} 
                         toggleSolo={toggleSolo} 
                         trackLoadErrors={trackLoadErrors} 
-                        onVolumeChange={setVolume}
-                        onMuteToggle={toggleMute}
-                        onSoloToggle={toggleSolo}
                         />
                     </div>
                 )}
@@ -298,11 +295,11 @@ const App: React.FC = () => {
 
             {/* Footer Player Bar - Responsive */}
             <footer className="flex-shrink-0 bg-[#161311] border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 safe-area-bottom">
-                <div className="max-w-[1920px] mx-auto px-4 py-2 md:py-3 flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-4 items-center">
+                <div className="max-w-[1920px] mx-auto px-2 md:px-4 py-1.5 md:py-3 flex flex-col md:grid md:grid-cols-3 gap-1 md:gap-4 items-center">
                     
                     {/* Desktop: Left / Mobile: Bottom Row (2nd Item) */}
                     <div className="hidden md:flex justify-start order-2 md:order-1">
-                    <PlaybackSpeedControl playbackRate={playbackRate} onPlaybackRateChange={setPlaybackRate} />
+                    <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
                     </div>
 
                     {/* Desktop: Center / Mobile: Top Row (Main) */}
@@ -312,13 +309,13 @@ const App: React.FC = () => {
 
                     {/* Desktop: Right / Mobile: Bottom Row (Shared with Speed in a flex container if implemented, currently stacked or hidden) */}
                     <div className="hidden md:flex justify-end order-3">
-                        <MasterControl volume={masterVolume} onVolumeChange={setMasterVolume} />
+                        <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
                     </div>
 
                     {/* Mobile-Only Row for Extra Controls */}
                     <div className="flex md:hidden w-full justify-between items-center space-x-2 order-3 pt-1">
-                        <PlaybackSpeedControl playbackRate={playbackRate} onPlaybackRateChange={setPlaybackRate} />
-                        <MasterControl volume={masterVolume} onVolumeChange={setMasterVolume} />
+                        <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                        <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
                     </div>
                 </div>
             </footer>
