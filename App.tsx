@@ -10,13 +10,15 @@ import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShowMode } from './components/ShowMode/ShowMode';
+import { exportMix } from './utils/audioExport';
+import { ExportModal } from './components/ExportModal';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SHOW_SONGS[0]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [appMode, setAppMode] = useState<'songs' | 'show'>('songs');
   const [sidebarTab, setSidebarTab] = useState<'repertorio' | 'ensaio'>('ensaio');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -61,43 +63,28 @@ const App: React.FC = () => {
 
   const currentSongsList = sidebarTab === 'repertorio' ? SONGS : SHOW_SONGS;
 
+  const handleExportClick = () => {
+    setIsExportModalOpen(true);
+  };
+
+  const confirmExport = async (startTime: number, endTime: number) => {
+    setIsExportModalOpen(false);
+    try {
+      setIsExporting(true);
+      await exportMix(selectedSong.name, trackStates, getAudioBuffer, masterVolume, startTime, endTime);
+    } catch (error: any) {
+      alert(error.message || "Erro ao exportar o áudio.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col font-sans bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-[#0c0a09] to-black text-stone-300 overflow-hidden relative">
       <Header 
         onToggleMenu={() => setIsMobileMenuOpen(true)} 
-        currentMode={appMode}
-        onToggleMode={setAppMode}
       />
       
-      {appMode === 'show' ? (
-        <div className="flex-grow min-h-0 relative z-10 flex flex-col">
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-                     <div className="text-center">
-                        <div className="relative w-12 h-12 md:w-16 md:h-16 mx-auto mb-4">
-                            <div className="absolute inset-0 rounded-full border-4 border-stone-800"></div>
-                            <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-                        </div>
-                        <p className="text-amber-500/80 font-medium tracking-wide animate-pulse text-sm">Carregando Linha do Tempo...</p>
-                    </div>
-                </div>
-            )}
-            <ShowMode 
-                song={selectedSong}
-                trackStates={trackStates}
-                currentTime={currentTime}
-                duration={songDuration}
-                isPlaying={isPlaying}
-                onPlayPause={isPlaying ? pause : play}
-                onStop={stop}
-                onSeek={seek}
-                onVolumeChange={setVolume}
-                onMuteToggle={toggleMute}
-                onSoloToggle={toggleSolo}
-                getAudioBuffer={getAudioBuffer}
-            />
-        </div>
-      ) : (
         <div className="flex-grow grid grid-cols-1 md:grid-cols-[320px_1fr] gap-2 md:gap-4 p-2 md:p-4 min-h-0 relative">
             
             {/* Mobile Sidebar Overlay (Drawer) */}
@@ -251,6 +238,31 @@ const App: React.FC = () => {
                         </svg>
                         <span className="hidden md:inline">Resetar Mix</span>
                     </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleExportClick}
+                        disabled={isExporting || isLoading}
+                        className={`flex items-center space-x-1 md:space-x-2 px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-sm font-medium rounded-full border transition-colors shadow-lg shadow-black/20 ml-2 ${
+                            isExporting || isLoading 
+                            ? 'bg-stone-800 text-stone-500 border-stone-700 cursor-not-allowed' 
+                            : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30'
+                        }`}
+                        title="Baixar mixagem atual (respeita SOLO e MUTE)"
+                    >
+                        {isExporting ? (
+                            <svg className="animate-spin h-3 w-3 md:h-4 md:w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        )}
+                        <span className="hidden md:inline">{isExporting ? 'Exportando...' : 'Baixar Mix'}</span>
+                    </motion.button>
                 </div>
                 
                 <AnimatePresence>
@@ -321,7 +333,14 @@ const App: React.FC = () => {
             </footer>
             </main>
         </div>
-      )}
+        
+        <ExportModal 
+          isOpen={isExportModalOpen} 
+          onClose={() => setIsExportModalOpen(false)} 
+          onExport={confirmExport} 
+          duration={songDuration} 
+          currentTime={currentTime} 
+        />
     </div>
   );
 };

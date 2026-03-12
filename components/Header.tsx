@@ -3,11 +3,9 @@ import { motion } from 'framer-motion';
 
 interface HeaderProps {
   onToggleMenu?: () => void;
-  currentMode: 'songs' | 'show';
-  onToggleMode: (mode: 'songs' | 'show') => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onToggleMode }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleMenu }) => {
   return (
     <header className="bg-transparent pt-2 md:pt-4 px-3 md:px-6 pb-0 flex justify-between items-center z-50 flex-shrink-0">
       <div className="flex items-center space-x-2 md:space-x-3">
@@ -55,37 +53,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, currentMode, onTog
                  </svg>
             </div>
         </div>
-      </div>
-      
-      {/* Mode Toggle */}
-      <div className="flex bg-stone-900/80 p-1.5 rounded-full border border-stone-700 shadow-inner">
-          <button
-            onClick={() => onToggleMode('songs')}
-            className={`px-4 py-2 md:px-6 md:py-2.5 text-xs md:text-sm font-bold rounded-full transition-all flex items-center space-x-2 ${
-                currentMode === 'songs' 
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
-                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
-              <path d="M6 3a.75.75 0 01.75.75v2.25a2.25 2.25 0 000 4.5v10.5a.75.75 0 01-1.5 0v-10.5a2.25 2.25 0 000-4.5V3.75A.75.75 0 016 3zM12 3a.75.75 0 01.75.75v10.5a2.25 2.25 0 000 4.5v2.25a.75.75 0 01-1.5 0v-2.25a2.25 2.25 0 000-4.5V3.75A.75.75 0 0112 3zM18 3a.75.75 0 01.75.75v6.75a2.25 2.25 0 000 4.5v6.75a.75.75 0 01-1.5 0v-6.75a2.25 2.25 0 000-4.5V3.75A.75.75 0 0118 3z" />
-            </svg>
-            <span>Mixer</span>
-          </button>
-          <button
-            onClick={() => onToggleMode('show')}
-            className={`px-4 py-2 md:px-6 md:py-2.5 text-xs md:text-sm font-bold rounded-full transition-all flex items-center space-x-2 ${
-                currentMode === 'show' 
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
-                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
-              <path fillRule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM6 4.5a1.5 1.5 0 00-1.5 1.5v12A1.5 1.5 0 006 19.5h12a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H6z" clipRule="evenodd" />
-              <path d="M7.5 9a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5A.75.75 0 017.5 9zM7.5 12a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5A.75.75 0 017.5 12zM7.5 15a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5A.75.75 0 017.5 15z" />
-            </svg>
-            <span>Linha do Tempo</span>
-          </button>
       </div>
     </header>
   );
