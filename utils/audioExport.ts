@@ -1,4 +1,6 @@
 import { TrackState } from '../types';
+// @ts-ignore
+import lamejs from 'lamejs';
 
 export async function exportMix(
   songName: string,
@@ -66,17 +68,17 @@ export async function exportMix(
   // 5. Renderizar o áudio
   const renderedBuffer = await offlineCtx.startRendering();
 
-  // 6. Converter para WAV
-  const wavBlob = audioBufferToWav(renderedBuffer);
+  // 6. Converter para MP3
+  const mp3Blob = audioBufferToMp3(renderedBuffer);
 
   // 7. Disparar o download
-  const url = URL.createObjectURL(wavBlob);
+  const url = URL.createObjectURL(mp3Blob);
   const a = document.createElement('a');
   a.href = url;
   
   // Formatar o nome do arquivo
   const safeName = songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  a.download = `${safeName}_mix.wav`;
+  a.download = `${safeName}_mix.mp3`;
   
   document.body.appendChild(a);
   a.click();
@@ -84,59 +86,79 @@ export async function exportMix(
   URL.revokeObjectURL(url);
 }
 
-function audioBufferToWav(buffer: AudioBuffer): Blob {
-  const numChannels = buffer.numberOfChannels;
+function audioBufferToMp3(buffer: AudioBuffer): Blob {
+  const channels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
-  const format = 1; // PCM
-  const bitDepth = 16;
-  
-  const bytesPerSample = bitDepth / 8;
-  const blockAlign = numChannels * bytesPerSample;
-  
-  const dataSize = buffer.length * blockAlign;
-  const headerSize = 44;
-  const totalSize = headerSize + dataSize;
-  
-  const arrayBuffer = new ArrayBuffer(totalSize);
-  const view = new DataView(arrayBuffer);
-  
-  const writeString = (offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
+  // @ts-ignore
+  const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128); // 128kbps
+  const mp3Data: Int8Array[] = [];
+
+  const left = buffer.getChannelData(0);
+  const right = channels > 1 ? buffer.getChannelData(1) : left;
+
+  const sampleBlockSize = 1152; // multiple of 576
+  const leftInt16 = new Int16Array(left.length);
+  const rightInt16 = new Int16Array(right.length);
+
+  for (let i = 0; i < left.length; i++) {
+    // Clamp and convert to Int16
+    let l = Math.max(-1, Math.min(1, left[i]));
+    leftInt16[i] = l < 0 ? l * 0x8000 : l * 0x7FFF;
+    
+    let r = Math.max(-1, Math.min(1, right[i]));
+    rightInt16[i] = r < 0 ? r * 0x8000 : r * 0x7FFF;
+  }
+
+  for (let i = 0; i < left.length; i += sampleBlockSize) {
+    const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+    const rightChunk = rightInt16.subarray(i, i + sampleBlockSize);
+    let mp3buf;
+    if (channels === 2) {
+      mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+    } else {
+      mp3buf = mp3encoder.encodeBuffer(leftChunk);
     }
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf);
+    }
+  }
+
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) {
+    mp3Data.push(mp3buf);
+  }
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
+}
+
+export function analyzeTrackActivity(buffer: AudioBuffer, threshold: number = 0.005): { start: number, end: number } {
+  const channelData = buffer.getChannelData(0);
+  let startIdx = -1;
+  let endIdx = -1;
+
+  // Find first sample above threshold
+  for (let i = 0; i < channelData.length; i++) {
+    if (Math.abs(channelData[i]) > threshold) {
+      startIdx = i;
+      break;
+    }
+  }
+
+  // If completely silent
+  if (startIdx === -1) {
+    return { start: 0, end: 0 };
+  }
+
+  // Find last sample above threshold
+  for (let i = channelData.length - 1; i >= 0; i--) {
+    if (Math.abs(channelData[i]) > threshold) {
+      endIdx = i;
+      break;
+    }
+  }
+
+  return {
+    start: startIdx / buffer.sampleRate,
+    end: endIdx / buffer.sampleRate
   };
-  
-  writeString(0, 'RIFF');
-  view.setUint32(4, totalSize - 8, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-  view.setUint16(20, format, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true); // ByteRate
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitDepth, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-  
-  const channelData = [];
-  for (let i = 0; i < numChannels; i++) {
-    channelData.push(buffer.getChannelData(i));
-  }
-  
-  let offset = 44;
-  for (let i = 0; i < buffer.length; i++) {
-    for (let channel = 0; channel < numChannels; channel++) {
-      let sample = channelData[channel][i];
-      // Clamp
-      sample = Math.max(-1, Math.min(1, sample));
-      // Scale to 16-bit integer
-      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-      view.setInt16(offset, sample, true);
-      offset += 2;
-    }
-  }
-  
-  return new Blob([arrayBuffer], { type: 'audio/wav' });
 }

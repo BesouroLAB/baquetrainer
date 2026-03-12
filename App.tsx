@@ -10,8 +10,8 @@ import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportMix } from './utils/audioExport';
-import { ExportModal } from './components/ExportModal';
+import { exportMix, analyzeTrackActivity } from './utils/audioExport';
+import { ExportModal, TrackActivity } from './components/ExportModal';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SHOW_SONGS[0]);
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [sidebarTab, setSidebarTab] = useState<'repertorio' | 'ensaio'>('ensaio');
   const [isExporting, setIsExporting] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [trackActivities, setTrackActivities] = useState<TrackActivity[]>([]);
 
   const {
     isLoading,
@@ -64,6 +65,23 @@ const App: React.FC = () => {
   const currentSongsList = sidebarTab === 'repertorio' ? SONGS : SHOW_SONGS;
 
   const handleExportClick = () => {
+    const hasSolo = trackStates.some(t => t.isSoloed);
+    const activeTracks = trackStates.filter(t => hasSolo ? t.isSoloed : !t.isMuted);
+
+    const activities = activeTracks.map(track => {
+      const buffer = getAudioBuffer(track.id);
+      if (!buffer) return null;
+      const { start, end } = analyzeTrackActivity(buffer);
+      return {
+        id: track.id,
+        name: track.name,
+        start,
+        end,
+        color: track.color
+      };
+    }).filter(Boolean) as TrackActivity[];
+
+    setTrackActivities(activities);
     setIsExportModalOpen(true);
   };
 
@@ -340,6 +358,7 @@ const App: React.FC = () => {
           onExport={confirmExport} 
           duration={songDuration} 
           currentTime={currentTime} 
+          trackActivities={trackActivities}
         />
     </div>
   );
