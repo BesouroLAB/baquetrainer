@@ -9,9 +9,10 @@ import { SONGS, SHOW_SONGS } from './constants';
 import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
+import { BassBoostControl } from './components/BassBoostControl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportMix, analyzeTrackActivity } from './utils/audioExport';
-import { ExportModal, TrackActivity } from './components/ExportModal';
+import { exportMix } from './utils/audioExport';
+import { ExportModal } from './components/ExportModal';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SHOW_SONGS[0]);
@@ -19,7 +20,6 @@ const App: React.FC = () => {
   const [sidebarTab, setSidebarTab] = useState<'repertorio' | 'ensaio'>('ensaio');
   const [isExporting, setIsExporting] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [trackActivities, setTrackActivities] = useState<TrackActivity[]>([]);
 
   const {
     isLoading,
@@ -41,6 +41,8 @@ const App: React.FC = () => {
     seek,
     playbackRate,
     setPlaybackRate,
+    isBassBoostEnabled,
+    setIsBassBoostEnabled,
     getAudioBuffer,
   } = useAudioPlayer(selectedSong);
 
@@ -65,23 +67,6 @@ const App: React.FC = () => {
   const currentSongsList = sidebarTab === 'repertorio' ? SONGS : SHOW_SONGS;
 
   const handleExportClick = () => {
-    const hasSolo = trackStates.some(t => t.isSoloed);
-    const activeTracks = trackStates.filter(t => hasSolo ? t.isSoloed : !t.isMuted);
-
-    const activities = activeTracks.map(track => {
-      const buffer = getAudioBuffer(track.id);
-      if (!buffer) return null;
-      const { start, end } = analyzeTrackActivity(buffer);
-      return {
-        id: track.id,
-        name: track.name,
-        start,
-        end,
-        color: track.color
-      };
-    }).filter(Boolean) as TrackActivity[];
-
-    setTrackActivities(activities);
     setIsExportModalOpen(true);
   };
 
@@ -328,8 +313,9 @@ const App: React.FC = () => {
                 <div className="max-w-[1920px] mx-auto px-2 md:px-4 py-1.5 md:py-3 flex flex-col md:grid md:grid-cols-3 gap-1 md:gap-4 items-center">
                     
                     {/* Desktop: Left / Mobile: Bottom Row (2nd Item) */}
-                    <div className="hidden md:flex justify-start order-2 md:order-1">
-                    <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                    <div className="hidden md:flex items-center space-x-4 justify-start order-2 md:order-1">
+                        <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                        <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
                     </div>
 
                     {/* Desktop: Center / Mobile: Top Row (Main) */}
@@ -344,7 +330,10 @@ const App: React.FC = () => {
 
                     {/* Mobile-Only Row for Extra Controls */}
                     <div className="flex md:hidden w-full justify-between items-center space-x-2 order-3 pt-1">
-                        <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                        <div className="flex items-center space-x-2">
+                            <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                            <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
+                        </div>
                         <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
                     </div>
                 </div>
@@ -358,7 +347,6 @@ const App: React.FC = () => {
           onExport={confirmExport} 
           duration={songDuration} 
           currentTime={currentTime} 
-          trackActivities={trackActivities}
         />
     </div>
   );

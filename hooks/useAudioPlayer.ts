@@ -12,11 +12,13 @@ export const useAudioPlayer = (song: Song) => {
   const [songDuration, setSongDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [isBassBoostEnabled, setIsBassBoostEnabled] = useState(false);
 
   const audioBuffers = useRef<Map<number, AudioBuffer>>(new Map());
   const sources = useRef<Map<number, AudioBufferSourceNode>>(new Map());
   const gainNodes = useRef<Map<number, GainNode>>(new Map());
   const masterGainNode = useRef<GainNode | null>(null);
+  const bassBoostFilter = useRef<BiquadFilterNode | null>(null);
   
   const startTimeRef = useRef(0);
   const pauseTimeRef = useRef(0);
@@ -37,11 +39,20 @@ export const useAudioPlayer = (song: Song) => {
     setCurrentTime(0); // Reset time on song change
     setSongDuration(0); // Reset duration on song change
 
-    // Initialize Gain Nodes
+    // Initialize Gain Nodes and Filter
     if (audioContext) {
       if (!masterGainNode.current) {
         masterGainNode.current = audioContext.createGain();
-        masterGainNode.current.connect(audioContext.destination);
+        
+        // Create Bass Boost Filter
+        bassBoostFilter.current = audioContext.createBiquadFilter();
+        bassBoostFilter.current.type = 'lowshelf';
+        bassBoostFilter.current.frequency.value = 100; // Focus on sub-bass
+        bassBoostFilter.current.gain.value = isBassBoostEnabled ? 15 : 0; // 15dB boost when enabled
+        
+        // Connect: MasterGain -> BassBoostFilter -> Destination
+        masterGainNode.current.connect(bassBoostFilter.current);
+        bassBoostFilter.current.connect(audioContext.destination);
       }
       
       gainNodes.current.clear();
@@ -147,6 +158,17 @@ export const useAudioPlayer = (song: Song) => {
   useEffect(() => {
     updateGains();
   }, [trackStates, updateGains]);
+
+  useEffect(() => {
+    if (bassBoostFilter.current && audioContext) {
+      // Smooth transition for the gain change
+      bassBoostFilter.current.gain.setTargetAtTime(
+        isBassBoostEnabled ? 15 : 0, 
+        audioContext.currentTime, 
+        0.1
+      );
+    }
+  }, [isBassBoostEnabled]);
 
   const stop = useCallback(() => {
     sources.current.forEach(source => {
@@ -377,6 +399,8 @@ export const useAudioPlayer = (song: Song) => {
     seek,
     playbackRate,
     setPlaybackRate: handleSetPlaybackRate,
+    isBassBoostEnabled,
+    setIsBassBoostEnabled,
     getAudioBuffer,
   };
 };
