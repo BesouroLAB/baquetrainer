@@ -6,6 +6,7 @@ const audioContext = typeof window !== 'undefined' ? new (window.AudioContext ||
 
 export const useAudioPlayer = (song: Song) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState({ loaded: 0, total: 0 });
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackLoadErrors, setTrackLoadErrors] = useState<Map<number, string>>(new Map());
   const [masterVolume, setMasterVolume] = useState(1.0);
@@ -13,18 +14,30 @@ export const useAudioPlayer = (song: Song) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isBassBoostEnabled, setIsBassBoostEnabled] = useState(false);
+  const [loopRegion, setLoopRegion] = useState<{ start: number | null, end: number | null }>({ start: null, end: null });
 
   const audioBuffers = useRef<Map<number, AudioBuffer>>(new Map());
   const sources = useRef<Map<number, AudioBufferSourceNode>>(new Map());
   const gainNodes = useRef<Map<number, GainNode>>(new Map());
   const masterGainNode = useRef<GainNode | null>(null);
   const bassBoostFilter = useRef<BiquadFilterNode | null>(null);
+  const bassPunchFilter = useRef<BiquadFilterNode | null>(null);
   
   const startTimeRef = useRef(0);
   const pauseTimeRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
+  const isPlayingRef = useRef(false);
+  const playbackRateRef = useRef(playbackRate);
 
   const [trackStates, setTrackStates] = useState<TrackState[]>([]);
+  const loopRegionRef = useRef(loopRegion);
+  const songDurationRef = useRef(songDuration);
+
+  // Keep refs in sync with state
+  useEffect(() => { loopRegionRef.current = loopRegion; }, [loopRegion]);
+  useEffect(() => { songDurationRef.current = songDuration; }, [songDuration]);
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { playbackRateRef.current = playbackRate; }, [playbackRate]);
 
   const initializeTrackStates = useCallback((tracks: Track[]) => {
     const initialStates = tracks.map(track => ({
@@ -35,24 +48,32 @@ export const useAudioPlayer = (song: Song) => {
       isSoloed: false,
     }));
     setTrackStates(initialStates);
-    setTrackLoadErrors(new Map()); // Reset errors on song change
-    setCurrentTime(0); // Reset time on song change
-    setSongDuration(0); // Reset duration on song change
+    setTrackLoadErrors(new Map());
+    setCurrentTime(0);
+    setSongDuration(0);
+    setLoopRegion({ start: null, end: null });
+    pauseTimeRef.current = 0;
 
-    // Initialize Gain Nodes and Filter
     if (audioContext) {
       if (!masterGainNode.current) {
         masterGainNode.current = audioContext.createGain();
         
-        // Create Bass Boost Filter
         bassBoostFilter.current = audioContext.createBiquadFilter();
         bassBoostFilter.current.type = 'lowshelf';
-        bassBoostFilter.current.frequency.value = 100; // Focus on sub-bass
-        bassBoostFilter.current.gain.value = isBassBoostEnabled ? 15 : 0; // 15dB boost when enabled
-        
-        // Connect: MasterGain -> BassBoostFilter -> Destination
+        bassBoostFilter.current.frequency.value = 120;
+        // Softened from 10 to 6
+        bassBoostFilter.current.gain.value = isBassBoostEnabled ? 6 : 0; 
+
+        bassPunchFilter.current = audioContext.createBiquadFilter();
+        bassPunchFilter.current.type = 'peaking';
+        bassPunchFilter.current.frequency.value = 65; 
+        bassPunchFilter.current.Q.value = 1.5;
+        // Softened from 14 to 8
+        bassPunchFilter.current.gain.value = isBassBoostEnabled ? 8 : 0;
+
         masterGainNode.current.connect(bassBoostFilter.current);
-        bassBoostFilter.current.connect(audioContext.destination);
+        bassBoostFilter.current.connect(bassPunchFilter.current);
+        bassPunchFilter.current.connect(audioContext.destination);
       }
       
       gainNodes.current.clear();
@@ -62,74 +83,69 @@ export const useAudioPlayer = (song: Song) => {
         gainNodes.current.set(track.id, gainNode);
       });
     }
-  }, []);
+  }, [isBassBoostEnabled]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     setIsLoading(true);
+    setLoadingProgress({ loaded: 0, total: song.tracks.length });
     initializeTrackStates(song.tracks);
 
     const loadTracks = async () => {
-      if (!audioContext) return;
+      if (!audioContext) {
+        setIsLoading(false);
+        return;
+      }
       
-      const promises = song.tracks.map(track => {
+      let loadedCount = 0;
+      const promises = song.tracks.map(async (track) => {
         if (!track.path) {
-          return Promise.resolve(null);
+          loadedCount++;
+          setLoadingProgress(prev => ({ ...prev, loaded: loadedCount }));
+          return null;
         }
 
-        return fetch(track.path, { mode: 'cors' })
-          .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status} for ${track.path}`);
-            }
-            return response.arrayBuffer();
-          })
-          .then(arrayBuffer => {
-            console.log(`Fetched ${track.instrument}: ${arrayBuffer.byteLength} bytes`);
-            if (arrayBuffer.byteLength < 1000) {
-              console.warn(`Warning: Audio data for ${track.instrument} is very small (${arrayBuffer.byteLength} bytes). This might be a Git LFS pointer instead of the actual audio file.`);
-            }
-            return audioContext.decodeAudioData(arrayBuffer)
-              .catch(decodeError => {
-                console.error(`Decoding failed for ${track.instrument}:`, decodeError);
-                throw new Error(`Decoding failed: ${decodeError.message}`);
-              });
-          })
-          .catch(error => {
-              console.error(`Failed to load or decode audio for ${track.instrument} (${track.path}):`, error);
-              setTrackLoadErrors(prev => {
-                  const next = new Map(prev);
-                  next.set(track.id, error.message);
-                  return next;
-              });
-              return null;
-          })
+        try {
+          const response = await fetch(track.path, { mode: 'cors', signal });
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = await audioContext.decodeAudioData(arrayBuffer);
+          
+          loadedCount++;
+          setLoadingProgress(prev => ({ ...prev, loaded: loadedCount }));
+          return buffer;
+        } catch (error: any) {
+          if (error.name === 'AbortError') return null;
+          console.error(`Failed to load ${track.instrument}:`, error);
+          setTrackLoadErrors(prev => new Map(prev).set(track.id, error.message));
+          loadedCount++;
+          setLoadingProgress(prev => ({ ...prev, loaded: loadedCount }));
+          return null;
+        }
       });
 
       const loadedBuffers = await Promise.all(promises);
+      if (signal.aborted) return;
+
       audioBuffers.current.clear();
       let maxDuration = 0;
       loadedBuffers.forEach((buffer, index) => {
         if(buffer) {
             const track = song.tracks[index];
             audioBuffers.current.set(track.id, buffer);
-            if (buffer.duration > maxDuration) {
-                maxDuration = buffer.duration;
-            }
+            if (buffer.duration > maxDuration) maxDuration = buffer.duration;
         }
       });
-      
-      // Fallback duration for Show Mode (ID 100) if no tracks loaded
-      if (maxDuration === 0 && song.id === 100) {
-          maxDuration = 600; // 10 minutes default
-      }
       
       setSongDuration(maxDuration);
       setIsLoading(false);
     };
 
     loadTracks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [song]);
+    return () => controller.abort();
+  }, [song, initializeTrackStates]);
 
   const updateGains = useCallback(() => {
     const soloedTracks = trackStates.filter(t => t.isSoloed);
@@ -139,12 +155,15 @@ export const useAudioPlayer = (song: Song) => {
       const gainNode = gainNodes.current.get(track.id);
       if (gainNode) {
         let newVolume = track.volume;
-        if (track.isMuted) {
+        if (track.isMuted || (hasSolo && !track.isSoloed)) {
           newVolume = 0;
         }
-        if (hasSolo && !track.isSoloed) {
-          newVolume = 0;
+
+        // Softened Alfaia boost from 1.2 to 1.1
+        if (isBassBoostEnabled && track.instrument.includes('Alfaia')) {
+          newVolume *= 1.1;
         }
+
         gainNode.gain.setValueAtTime(newVolume, audioContext?.currentTime || 0);
       }
     });
@@ -152,90 +171,33 @@ export const useAudioPlayer = (song: Song) => {
     if (masterGainNode.current) {
         masterGainNode.current.gain.setValueAtTime(masterVolume, audioContext?.currentTime || 0);
     }
+  }, [trackStates, masterVolume, isBassBoostEnabled]);
 
-  }, [trackStates, masterVolume]);
-
-  useEffect(() => {
-    updateGains();
-  }, [trackStates, updateGains]);
+  useEffect(() => updateGains(), [trackStates, updateGains]);
 
   useEffect(() => {
-    if (bassBoostFilter.current && audioContext) {
-      // Smooth transition for the gain change
-      bassBoostFilter.current.gain.setTargetAtTime(
-        isBassBoostEnabled ? 15 : 0, 
-        audioContext.currentTime, 
-        0.1
-      );
+    if (bassBoostFilter.current && bassPunchFilter.current && audioContext) {
+      // Softened from 10 to 6
+      bassBoostFilter.current.gain.setTargetAtTime(isBassBoostEnabled ? 6 : 0, audioContext.currentTime, 0.05);
+      // Softened from 14 to 8
+      bassPunchFilter.current.gain.setTargetAtTime(isBassBoostEnabled ? 8 : 0, audioContext.currentTime, 0.05);
     }
   }, [isBassBoostEnabled]);
 
-  const stop = useCallback(() => {
-    sources.current.forEach(source => {
-        try {
-            source.stop();
-        } catch(e) {
-            // Ignore error if already stopped
-        }
+  const stopSources = useCallback(() => {
+     sources.current.forEach(source => {
+        try { source.stop(); } catch(e) {}
         source.disconnect();
     });
     sources.current.clear();
-    
-    if(audioContext?.state === 'running') {
-       audioContext.suspend(); 
-    }
+  }, []);
+
+  const stop = useCallback(() => {
+    stopSources();
     setIsPlaying(false);
     setCurrentTime(0);
     pauseTimeRef.current = 0;
-  }, []);
-  
-  const stopRef = useRef(stop);
-  useEffect(() => {
-      stopRef.current = stop;
-  });
-
-    // Animation loop for current time display
-  const animate = useCallback(() => {
-      if (!audioContext || !isPlaying) return;
-      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      const newCurrentTime = (realTimeElapsed * playbackRate) + pauseTimeRef.current;
-
-      if (songDuration > 0 && newCurrentTime >= songDuration) {
-          stopRef.current();
-          return;
-      }
-
-      setCurrentTime(newCurrentTime);
-      animationFrameRef.current = requestAnimationFrame(animate);
-  }, [audioContext, isPlaying, playbackRate, songDuration]);
-
-  useEffect(() => {
-      if(isPlaying) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-          if(animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-          }
-      }
-
-      return () => {
-          if(animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-          }
-      };
-  }, [isPlaying, animate])
-
-  const stopSources = useCallback(() => {
-     sources.current.forEach(source => {
-        try {
-            source.stop();
-        } catch(e) {
-            // Ignore error if already stopped
-        }
-        source.disconnect();
-    });
-    sources.current.clear();
-  }, []);
+  }, [stopSources]);
 
   const createAndConnectSources = useCallback(() => {
     song.tracks.forEach(track => {
@@ -251,63 +213,38 @@ export const useAudioPlayer = (song: Song) => {
     });
   }, [song.tracks, playbackRate]);
 
-  const handleSetPlaybackRate = useCallback((rate: number) => {
-    if (audioContext && isPlaying) {
-      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
-      pauseTimeRef.current += realTimeElapsed * playbackRate;
-      startTimeRef.current = audioContext.currentTime;
-    }
-    setPlaybackRate(rate);
-  }, [audioContext, isPlaying, playbackRate]);
-
-  // Update playback rate on the fly for active sources
-  useEffect(() => {
-    sources.current.forEach(source => {
-      if (source.playbackRate) {
-        source.playbackRate.value = playbackRate;
-      }
-    });
-  }, [playbackRate]);
-
   const play = async () => {
-    if (isLoading || !audioContext) return;
-    if (audioContext.state === 'suspended') {
-      await audioContext.resume();
-    }
+    if (isLoading || !audioContext || isPlaying) return;
+    if (audioContext.state === 'suspended') await audioContext.resume();
     
     stopSources();
     createAndConnectSources();
     
-    const offset = pauseTimeRef.current % songDuration;
-    const startTime = audioContext.currentTime + 0.05; // Schedule 50ms in the future for perfect sync
+    const offset = pauseTimeRef.current;
+    const startTime = audioContext.currentTime + 0.05;
+    startTimeRef.current = startTime;
     
     sources.current.forEach((source, trackId) => {
       const buffer = audioBuffers.current.get(trackId);
-      if (buffer && offset < buffer.duration) {
+      if (source && buffer && offset < buffer.duration) {
         source.start(startTime, offset);
       }
     });
+
     setIsPlaying(true);
-    
-    startTimeRef.current = startTime;
   };
 
   const pause = async () => {
     if (audioContext && isPlaying) {
-      const realTimeElapsed = Math.max(0, audioContext.currentTime - startTimeRef.current);
+      setIsPlaying(false);
+      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
       pauseTimeRef.current += realTimeElapsed * playbackRate;
       stopSources();
-      setIsPlaying(false);
     }
   };
 
-  const returnToZero = () => {
-      stop();
-  }
-
   const seek = useCallback((time: number) => {
     if (!audioContext || isNaN(time) || songDuration === 0) return;
-
     const newTime = Math.max(0, Math.min(time, songDuration));
     
     setCurrentTime(newTime);
@@ -316,91 +253,63 @@ export const useAudioPlayer = (song: Song) => {
     if (isPlaying) {
         stopSources();
         createAndConnectSources();
-        
-        const offset = newTime % songDuration;
         const startTime = audioContext.currentTime + 0.05;
-        
         sources.current.forEach((source, trackId) => {
             const buffer = audioBuffers.current.get(trackId);
-            if (buffer && offset < buffer.duration) {
-                source.start(startTime, offset);
-            }
+            if (buffer && newTime < buffer.duration) source.start(startTime, newTime);
         });
-
         startTimeRef.current = startTime;
     }
-  }, [audioContext, isPlaying, songDuration, stopSources, createAndConnectSources]);
+  }, [isPlaying, songDuration, createAndConnectSources, stopSources]);
 
-  const setVolume = (trackId: number, volume: number) => {
-    setTrackStates(prev => prev.map(t => t.id === trackId ? { ...t, volume } : t));
-  };
-  
-  const toggleMute = (trackId: number) => {
-    setTrackStates(prev => prev.map(t => t.id === trackId ? { ...t, isMuted: !t.isMuted } : t));
-  };
-  
-  const toggleSolo = (trackId: number) => {
-    setTrackStates(prev => prev.map(t => t.id === trackId ? { ...t, isSoloed: !t.isSoloed } : t));
-  };
+  const animate = useCallback(() => {
+      if (!audioContext || !isPlayingRef.current) return;
+      const realTimeElapsed = audioContext.currentTime - startTimeRef.current;
+      const newCurrentTime = (realTimeElapsed * playbackRateRef.current) + pauseTimeRef.current;
 
-  const resetMixer = useCallback(() => {
-    setTrackStates(prev => 
-      prev.map(track => ({
-        ...track,
-        volume: 1.0,
-        isMuted: false,
-        isSoloed: false,
-      }))
-    );
-  }, []);
+      const loop = loopRegionRef.current;
+      if (loop.start !== null && loop.end !== null && newCurrentTime >= loop.end) {
+          seek(loop.start);
+          animationFrameRef.current = requestAnimationFrame(animate);
+          return;
+      }
+
+      const duration = songDurationRef.current;
+      if (duration > 0 && newCurrentTime >= duration) {
+          stop();
+          return;
+      }
+
+      setCurrentTime(newCurrentTime);
+      animationFrameRef.current = requestAnimationFrame(animate);
+  }, [seek, stop]);
 
   useEffect(() => {
-    const resumeAudio = async () => {
-        if (audioContext && audioContext.state === 'suspended') {
-            await audioContext.resume();
-        }
-        window.removeEventListener('click', resumeAudio);
-        window.removeEventListener('keydown', resumeAudio);
-    };
+      if(isPlaying) animationFrameRef.current = requestAnimationFrame(animate);
+      return () => { if(animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
+  }, [isPlaying, animate]);
 
-    window.addEventListener('click', resumeAudio);
-    window.addEventListener('keydown', resumeAudio);
+  useEffect(() => {
+      return () => {
+          stopSources();
+      };
+  }, [stopSources]);
 
-    return () => {
-        window.removeEventListener('click', resumeAudio);
-        window.removeEventListener('keydown', resumeAudio);
-        stop();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const returnToZero = () => {
+      seek(0);
+  };
+
+  const getAudioBuffer = useCallback((trackId: number) => {
+      return audioBuffers.current.get(trackId);
   }, []);
 
-
-    const getAudioBuffer = useCallback((trackId: number) => {
-        return audioBuffers.current.get(trackId);
-    }, []);
-
   return {
-    isLoading,
-    isPlaying,
-    play,
-    pause,
-    stop,
-    returnToZero,
-    trackStates,
-    setVolume,
-    toggleMute,
-    toggleSolo,
-    resetMixer,
-    trackLoadErrors,
-    masterVolume,
-    setMasterVolume,
-    currentTime,
-    songDuration,
-    seek,
-    playbackRate,
-    setPlaybackRate: handleSetPlaybackRate,
-    isBassBoostEnabled,
-    setIsBassBoostEnabled,
-    getAudioBuffer,
+    isLoading, loadingProgress, isPlaying, play, pause, stop, returnToZero, getAudioBuffer,
+    trackStates, setVolume: (id: number, vol: number) => setTrackStates(prev => prev.map(t => t.id === id ? { ...t, volume: vol } : t)),
+    toggleMute: (id: number) => setTrackStates(prev => prev.map(t => t.id === id ? { ...t, isMuted: !t.isMuted } : t)),
+    toggleSolo: (id: number) => setTrackStates(prev => prev.map(t => t.id === id ? { ...t, isSoloed: !t.isSoloed } : t)),
+    resetMixer: () => setTrackStates(prev => prev.map(t => ({ ...t, volume: 1.0, isMuted: false, isSoloed: false }))),
+    trackLoadErrors, masterVolume, setMasterVolume, currentTime, songDuration, seek, loopRegion, setLoopRegion,
+    playbackRate, setPlaybackRate, isBassBoostEnabled, setIsBassBoostEnabled
   };
 };

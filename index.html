@@ -4,10 +4,35 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ArquiRender AI</title>
-    <link rel="stylesheet" href="/index.css">
-  </head>
-  <body class="bg-zinc-50 text-zinc-900 antialiased">
+    <title>BaqueTreino | Nação Sankofa Baobá</title>
+
+    <style>
+      /* Custom styles for vertical range input to ensure it overlays correctly */
+      input[type=range][orient=vertical] {
+        writing-mode: vertical-lr;
+        direction: rtl;
+      }
+      
+      /* Global scrollbar styling for the dark organic theme */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1c1917; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #44403c; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #d97706; 
+      }
+    </style>
+
+
+</head>
+  <body class="bg-[#0c0a09] text-stone-200 antialiased selection:bg-amber-500/30 selection:text-amber-200">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

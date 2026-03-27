@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { SongSelector } from './components/SongSelector';
 import { Mixer } from './components/Mixer';
 import { TransportControls } from './components/TransportControls';
+import { PlayerLine } from './components/PlayerLine';
 import { Alert } from './components/Alert';
 import { Header } from './components/Header';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
@@ -10,9 +11,13 @@ import type { Song } from './types';
 import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
 import { BassBoostControl } from './components/BassBoostControl';
+import { LoopControl } from './components/LoopControl';
+import { OnboardingModal } from './components/OnboardingModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportMix } from './utils/audioExport';
-import { ExportModal } from './components/ExportModal';
+import { exportMix, analyzeTrackActivity } from './utils/audioExport';
+import { ExportModal, TrackActivity } from './components/ExportModal';
+
+const ONBOARDING_KEY = 'baquetreino_onboarding_done';
 
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SHOW_SONGS[0]);
@@ -20,9 +25,19 @@ const App: React.FC = () => {
   const [sidebarTab, setSidebarTab] = useState<'repertorio' | 'ensaio'>('ensaio');
   const [isExporting, setIsExporting] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [trackActivities, setTrackActivities] = useState<TrackActivity[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem(ONBOARDING_KEY); } catch { return false; }
+  });
+
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false);
+    try { localStorage.setItem(ONBOARDING_KEY, 'true'); } catch {}
+  }, []);
 
   const {
     isLoading,
+    loadingProgress,
     isPlaying,
     play,
     pause,
@@ -43,6 +58,8 @@ const App: React.FC = () => {
     setPlaybackRate,
     isBassBoostEnabled,
     setIsBassBoostEnabled,
+    loopRegion,
+    setLoopRegion,
     getAudioBuffer,
   } = useAudioPlayer(selectedSong);
 
@@ -67,6 +84,23 @@ const App: React.FC = () => {
   const currentSongsList = sidebarTab === 'repertorio' ? SONGS : SHOW_SONGS;
 
   const handleExportClick = () => {
+    const hasSolo = trackStates.some(t => t.isSoloed);
+    const activeTracks = trackStates.filter(t => hasSolo ? t.isSoloed : !t.isMuted);
+
+    const activities = activeTracks.map(track => {
+      const buffer = getAudioBuffer(track.id);
+      if (!buffer) return null;
+      const { start, end } = analyzeTrackActivity(buffer);
+      return {
+        id: track.id,
+        name: track.name, // Correct property name from trackStates (it matches TrackState interface)
+        start,
+        end,
+        color: (track as any).color // color might not be on TrackState, checking...
+      };
+    }).filter(Boolean) as TrackActivity[];
+
+    setTrackActivities(activities);
     setIsExportModalOpen(true);
   };
 
@@ -74,7 +108,16 @@ const App: React.FC = () => {
     setIsExportModalOpen(false);
     try {
       setIsExporting(true);
-      await exportMix(selectedSong.name, trackStates, getAudioBuffer, masterVolume, startTime, endTime);
+      await exportMix(
+        selectedSong.name, 
+        trackStates, 
+        getAudioBuffer, 
+        masterVolume, 
+        isBassBoostEnabled,
+        playbackRate,
+        startTime, 
+        endTime
+      );
     } catch (error: any) {
       alert(error.message || "Erro ao exportar o áudio.");
     } finally {
@@ -87,6 +130,7 @@ const App: React.FC = () => {
       <Header 
         onToggleMenu={() => setIsMobileMenuOpen(true)} 
       />
+      <div data-onboarding="welcome" className="hidden" />
       
         <div className="flex-grow grid grid-cols-1 md:grid-cols-[320px_1fr] gap-2 md:gap-4 p-2 md:p-4 min-h-0 relative">
             
@@ -157,7 +201,7 @@ const App: React.FC = () => {
             </AnimatePresence>
 
             {/* Desktop Sidebar (Static) */}
-            <aside className="hidden md:flex bg-stone-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex-col p-5 shadow-2xl overflow-hidden relative group">
+            <aside data-onboarding="sidebar" className="hidden md:flex bg-stone-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex-col p-5 shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-[0.03] pointer-events-none"></div>
 
             <div className="flex-shrink-0 relative z-10">
@@ -220,11 +264,18 @@ const App: React.FC = () => {
                         {selectedSong.name}
                     </motion.h2>
                     <div className="flex items-center space-x-2 mt-1">
+                        {selectedSong.bpm > 0 && (
+                            <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
+                            {selectedSong.bpm} BPM
+                            </span>
+                        )}
+                        {selectedSong.bpm > 0 && (
+                            <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
+                            {selectedSong.timeSignature.join('/')}
+                            </span>
+                        )}
                         <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
-                        {selectedSong.bpm} BPM
-                        </span>
-                        <span className="text-[9px] md:text-xs bg-stone-800/50 text-stone-400 px-1.5 py-0.5 md:px-2 rounded-full border border-white/5">
-                        {selectedSong.timeSignature.join('/')}
+                            {selectedSong.tracks.length} faixas
                         </span>
                     </div>
                     </div>
@@ -285,16 +336,44 @@ const App: React.FC = () => {
 
                 {isLoading ? (
                     <div className="flex-grow flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="relative w-12 h-12 md:w-16 md:h-16 mx-auto mb-4">
-                            <div className="absolute inset-0 rounded-full border-4 border-stone-800"></div>
-                            <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                    <div className="text-center relative">
+                        <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-6">
+                            <svg className="w-full h-full transform -rotate-90">
+                                <circle
+                                    cx="50%"
+                                    cy="50%"
+                                    r="45%"
+                                    className="stroke-stone-800 fill-none"
+                                    strokeWidth="4"
+                                />
+                                <motion.circle
+                                    cx="50%"
+                                    cy="50%"
+                                    r="45%"
+                                    className="stroke-amber-500 fill-none"
+                                    strokeWidth="4"
+                                    strokeDasharray="100 100"
+                                    initial={{ strokeDashoffset: 100 }}
+                                    animate={{ strokeDashoffset: 100 - (loadingProgress.loaded / (loadingProgress.total || 1)) * 100 }}
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-xs md:text-sm font-mono font-bold text-amber-500">
+                                    {Math.round((loadingProgress.loaded / (loadingProgress.total || 1)) * 100)}%
+                                </span>
+                            </div>
                         </div>
-                        <p className="text-amber-500/80 font-medium tracking-wide animate-pulse text-sm">Carregando...</p>
+                        <p className="text-amber-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
+                            Carregando Faixas
+                        </p>
+                        <p className="text-stone-500 text-[9px] md:text-[10px] mt-1 font-mono">
+                            {loadingProgress.loaded} / {loadingProgress.total}
+                        </p>
                     </div>
                     </div>
                 ) : (
-                    <div className="flex-grow overflow-hidden relative">
+                    <div data-onboarding="mixer" className="flex-grow overflow-hidden relative">
                         {/* Fader area background accent */}
                         <div className="absolute inset-x-0 bottom-0 h-24 md:h-32 bg-gradient-to-t from-stone-950/50 to-transparent pointer-events-none"></div>
                         <Mixer 
@@ -308,34 +387,58 @@ const App: React.FC = () => {
                 )}
             </section>
 
-            {/* Footer Player Bar - Responsive */}
-            <footer className="flex-shrink-0 bg-[#161311] border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 safe-area-bottom">
-                <div className="max-w-[1920px] mx-auto px-2 md:px-4 py-1.5 md:py-3 flex flex-col md:grid md:grid-cols-3 gap-1 md:gap-4 items-center">
+            {/* Footer Player Bar - Unified Control Strip */}
+            <footer className="flex-shrink-0 bg-[#0c0a09]/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-20px_60px_rgba(0,0,0,0.9)] z-50 safe-area-bottom overflow-hidden">
+                
+                {/* 1. Integrated Progress Bar (Sits on the top border of the footer) */}
+                <div className="w-full relative h-[4px] bg-stone-900 group/seek pt-3">
+                    <PlayerLine 
+                        currentTime={currentTime} 
+                        songDuration={songDuration} 
+                        onSeek={seek} 
+                        loopRegion={loopRegion}
+                        disabled={hasErrors} 
+                    />
+                </div>
+
+                {/* 2. Unified Controls Bar */}
+                <div className="max-w-[1920px] mx-auto px-4 py-2.5 md:py-3.5 h-16 md:h-20 flex items-center justify-between gap-2">
                     
-                    {/* Desktop: Left / Mobile: Bottom Row (2nd Item) */}
-                    <div className="hidden md:flex items-center space-x-4 justify-start order-2 md:order-1">
-                        <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                    {/* Left: Tempo & Loop */}
+                    <div data-onboarding="tools-left" className="flex items-center space-x-1.5 md:space-x-3 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
+                      <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
+                      <div className="w-px h-6 bg-white/10" />
+                      <LoopControl 
+                        currentTime={currentTime} 
+                        duration={songDuration} 
+                        loopRegion={loopRegion} 
+                        setLoopRegion={setLoopRegion} 
+                      />
+                    </div>
+
+                    {/* Center: Transport Controls (Play focus) */}
+                    <div data-onboarding="transport" className="flex-1 flex justify-center max-w-sm md:max-w-md">
+                      <TransportControls isPlaying={isPlaying} onPlay={play} onPause={pause} onStop={stop} onReturnToZero={returnToZero} hasErrors={hasErrors} />
+                    </div>
+
+                    {/* Right: Boost & Master */}
+                    <div className="flex items-center space-x-1.5 md:space-x-3 justify-end">
+                      <div data-onboarding="tools-right" className="hidden lg:flex items-center space-x-2 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
                         <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
-                    </div>
-
-                    {/* Desktop: Center / Mobile: Top Row (Main) */}
-                    <div className="w-full flex justify-center order-1 md:order-2">
-                    <TransportControls isPlaying={isPlaying} onPlay={play} onPause={pause} onStop={stop} onReturnToZero={returnToZero} hasErrors={hasErrors} currentTime={currentTime} songDuration={songDuration} onSeek={seek} />
-                    </div>
-
-                    {/* Desktop: Right / Mobile: Bottom Row (Shared with Speed in a flex container if implemented, currently stacked or hidden) */}
-                    <div className="hidden md:flex justify-end order-3">
+                      </div>
+                      
+                      {/* Master Volume (Always visible) */}
+                      <div className="pl-2 border-l border-white/5 ml-2">
                         <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
+                      </div>
                     </div>
+                </div>
 
-                    {/* Mobile-Only Row for Extra Controls */}
-                    <div className="flex md:hidden w-full justify-between items-center space-x-2 order-3 pt-1">
-                        <div className="flex items-center space-x-2">
-                            <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
-                            <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
-                        </div>
-                        <MasterControl volume={masterVolume} setVolume={setMasterVolume} />
-                    </div>
+                {/* Mobile: Scrollable Tools (Only visible on small screens when needed) */}
+                <div className="md:hidden flex overflow-x-auto px-4 pb-2 scroll-smooth no-scrollbar border-t border-white/5 pt-2 text-center">
+                     <div className="flex items-center space-x-2 shrink-0 mx-auto">
+                        <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
+                     </div>
                 </div>
             </footer>
             </main>
@@ -347,10 +450,15 @@ const App: React.FC = () => {
           onExport={confirmExport} 
           duration={songDuration} 
           currentTime={currentTime} 
+          trackActivities={trackActivities}
         />
+
+        {/* Onboarding Modal (first visit only) */}
+        <AnimatePresence>
+          {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
+        </AnimatePresence>
     </div>
   );
 };
 
 export default App;
-
