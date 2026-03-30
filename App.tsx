@@ -12,13 +12,9 @@ import { MasterControl } from './components/MasterControl';
 import { PlaybackSpeedControl } from './components/PlaybackSpeedControl';
 import { BassBoostControl } from './components/BassBoostControl';
 import { LoopControl } from './components/LoopControl';
-import { OnboardingModal } from './components/OnboardingModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportMix, analyzeTrackActivity } from './utils/audioExport';
 import { ExportModal, TrackActivity } from './components/ExportModal';
-
-const ONBOARDING_KEY = 'baquetreino_onboarding_done';
-
 const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song>(SHOW_SONGS[0]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,14 +22,6 @@ const App: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [trackActivities, setTrackActivities] = useState<TrackActivity[]>([]);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem(ONBOARDING_KEY); } catch { return false; }
-  });
-
-  const handleOnboardingComplete = useCallback(() => {
-    setShowOnboarding(false);
-    try { localStorage.setItem(ONBOARDING_KEY, 'true'); } catch {}
-  }, []);
 
   const {
     isLoading,
@@ -130,7 +118,7 @@ const App: React.FC = () => {
       <Header 
         onToggleMenu={() => setIsMobileMenuOpen(true)} 
       />
-      <div data-onboarding="welcome" className="hidden" />
+
       
         <div className="flex-grow grid grid-cols-1 md:grid-cols-[320px_1fr] gap-2 md:gap-4 p-2 md:p-4 min-h-0 relative">
             
@@ -201,7 +189,7 @@ const App: React.FC = () => {
             </AnimatePresence>
 
             {/* Desktop Sidebar (Static) */}
-            <aside data-onboarding="sidebar" className="hidden md:flex bg-stone-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex-col p-5 shadow-2xl overflow-hidden relative group">
+            <aside className="hidden md:flex bg-stone-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex-col p-5 shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-[0.03] pointer-events-none"></div>
 
             <div className="flex-shrink-0 relative z-10">
@@ -373,7 +361,7 @@ const App: React.FC = () => {
                     </div>
                     </div>
                 ) : (
-                    <div data-onboarding="mixer" className="flex-grow overflow-hidden relative">
+                    <div className="flex-grow overflow-hidden relative">
                         {/* Fader area background accent */}
                         <div className="absolute inset-x-0 bottom-0 h-24 md:h-32 bg-gradient-to-t from-stone-950/50 to-transparent pointer-events-none"></div>
                         <Mixer 
@@ -405,7 +393,7 @@ const App: React.FC = () => {
                 <div className="max-w-[1920px] mx-auto px-4 py-2.5 md:py-3.5 h-16 md:h-20 flex items-center justify-between gap-2">
                     
                     {/* Left: Tempo & Loop */}
-                    <div data-onboarding="tools-left" className="flex items-center space-x-1.5 md:space-x-3 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
+                    <div className="flex items-center space-x-1.5 md:space-x-3 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
                       <PlaybackSpeedControl playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} />
                       <div className="w-px h-6 bg-white/10" />
                       <LoopControl 
@@ -417,13 +405,13 @@ const App: React.FC = () => {
                     </div>
 
                     {/* Center: Transport Controls (Play focus) */}
-                    <div data-onboarding="transport" className="flex-1 flex justify-center max-w-sm md:max-w-md">
+                    <div className="flex-1 flex justify-center max-w-sm md:max-w-md">
                       <TransportControls isPlaying={isPlaying} onPlay={play} onPause={pause} onStop={stop} onReturnToZero={returnToZero} hasErrors={hasErrors} />
                     </div>
 
                     {/* Right: Boost & Master */}
                     <div className="flex items-center space-x-1.5 md:space-x-3 justify-end">
-                      <div data-onboarding="tools-right" className="hidden lg:flex items-center space-x-2 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
+                      <div className="hidden lg:flex items-center space-x-2 bg-white/[0.03] p-1 rounded-xl border border-white/5 shadow-inner">
                         <BassBoostControl enabled={isBassBoostEnabled} setEnabled={setIsBassBoostEnabled} />
                       </div>
                       
@@ -453,10 +441,7 @@ const App: React.FC = () => {
           trackActivities={trackActivities}
         />
 
-        {/* Onboarding Modal (first visit only) */}
-        <AnimatePresence>
-          {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
-        </AnimatePresence>
+
     </div>
   );
 };
