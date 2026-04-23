@@ -3,7 +3,7 @@ import type { Song } from './types';
 
 // ====================================================================================
 // ESTRATÉGIA DE ÁUDIO:
-// Links atualizados conforme solicitação do usuário.
+// Links atualizados. (Música 09 tracks atualizadas em 23/04/2026)
 // As músicas agora contém todas as faixas separadas (multitracks) para mixagem.
 // ====================================================================================
 
